@@ -5,6 +5,7 @@ function love.load()
     require 'util'
     require 'entity'
     require 'player'
+    require 'pellet'
     require 'wall'
     require 'spawner'
     --gameFont = love.graphics.newFont('fonts/ka1.ttf', 10)

@@ -30,7 +30,7 @@ end
 function Player:update(dt)
 
     self:Warp()
-    for k, v in ipairs(walls) do
+    for k, v in pairs(walls) do
         if CheckCollision(self.x, self.y, self.width, self.height,
                                              v.x, v.y, v.width, v.height) then
             love.event.push('onCollide')

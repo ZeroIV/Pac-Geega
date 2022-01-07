@@ -1,6 +1,7 @@
 local collisionBuffer = 5
 local dt = love.timer.getDelta()
 ERRORSTRING = 'Something went wrong'
+WINDOW_WIDTH, WINDOW_HEIGHT = love.graphics.getDimensions()
 gfx = love.graphics
 
 local function Collision_Correction(e)
@@ -76,7 +77,7 @@ end
 function love.handlers.directionChange(axis, change)
     local e = player
     local canMove = true
-    local nearestx ,nearesty = GetNearestPoint(e) --TODO: breaks if e is outside grid (i.e. warping)
+    local nearestx ,nearesty = GetNearestPoint(e) --TODO: breaks if e is outside grid (i.e. in warp tunnel)
 
     if axis == 'x' then --movement on x axis
         for k, v in ipairs(grid.y) do
@@ -90,7 +91,7 @@ function love.handlers.directionChange(axis, change)
         if change < 0 then
             for k, v in ipairs(walls) do
                 if CheckCollision(e.x - cellSize, e.y, e.width, e.height,
-                                            v.x, v.y - 5, v.width, v.height - 5) then
+                                            v.x, v.y, v.width, v.height) then
                     canMove = false
                     break
                 end
@@ -127,7 +128,7 @@ function love.handlers.directionChange(axis, change)
             end
         else --moving down
             for k, v in pairs(walls) do
-                if CheckCollision(e.x, e.y + cellSize, e.width - 5, e.height,
+                if CheckCollision(e.x, e.y + cellSize, e.width, e.height,
                                             v.x, v.y , v.width, v.height) then
                     canMove = false
                     break
@@ -139,6 +140,10 @@ function love.handlers.directionChange(axis, change)
             e:changeDirection(axis, change)
         end
     end
+end
+
+function love.handlers.onScore()
+    
 end
 
 function love.handlers.onDeath()

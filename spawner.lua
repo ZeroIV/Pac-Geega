@@ -23,18 +23,9 @@ function Spawner:drawWalls(coordinates, color, width, lineStyle, joinStyle)
 end
 
 function Spawner:draw()
-    local enemy_spawn = {
-        grid.x[13], grid.y[13];
-        grid.x[11], grid.y[13];
-        grid.x[11], grid.y[17];
-        grid.x[18], grid.y[17];
-        grid.x[18], grid.y[13];
-        grid.x[16], grid.y[13];
-    }
     local enemy_spawn_gate = {
-        grid.x[13] + 1, grid.y[13] + 2;
-        grid.x[16] - 1, grid.y[13] + 2;
+        grid.x[13], grid.y[13] + 3;
+        grid.x[16], grid.y[13] + 3;
     }
-    self:drawWalls(enemy_spawn, colors.blue, 5, 'rough', 'bevel')
     self:drawWalls(enemy_spawn_gate, colors.white)
 end

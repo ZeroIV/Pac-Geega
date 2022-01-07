@@ -1,12 +1,11 @@
 Game = Object:extend()
-WINDOW_WIDTH, WINDOW_HEIGHT = love.graphics.getDimensions()
 grid = { x = {}, y ={} }
 cellSize = 25
 gridLines = {}
 
 function Game:new()
 
-    self:buildGrid()
+    self:buildGameGrid()
     walls =
     {
         --top left warp
@@ -65,18 +64,29 @@ function Game:new()
         Wall(grid.x[23], grid.y[7], cellSize * 3, cellSize),
         Wall(grid.x[23], grid.y[22], cellSize * 3, cellSize),
         Wall(grid.x[23],grid.y[22], cellSize, cellSize * 4),
+        --spawner walls
+        Wall(grid.x[11], grid.y[13], cellSize * 2, 5);
+        Wall(grid.x[11], grid.y[13], 5, cellSize * 4);
+        Wall(grid.x[11], grid.y[17]-5, cellSize * 7, 5);
+        Wall(grid.x[18]-5, grid.y[13], 5, cellSize * 4);
+        Wall(grid.x[16], grid.y[13], cellSize * 2, 5);
     }
     spawner = Spawner()
+    pellets = {}
+
+    --create grid lines
+    -- vertical lines.
     for x = cellSize, WINDOW_WIDTH, cellSize do
         local line = {x, 0, x, WINDOW_HEIGHT}
         table.insert(gridLines, line)
     end
-    -- Horizontal lines.
+    -- horizontal lines.
     for y = cellSize, WINDOW_HEIGHT, cellSize do
         local line = {0, y, WINDOW_WIDTH, y}
         table.insert(gridLines, line)
     end
---[[
+
+    --[[
     --import resources
     xMenuOrigin = (WINDOW_WIDTH / 2) - 50
     yMenuOrigin = WINDOW_HEIGHT / 2
@@ -90,21 +100,23 @@ function Game:new()
         [1] = startOne,
         [2] = menuQuit
     }
---]]
-    --initialize start screen
+    --]]
+    -- initialize start screen
     --self.start = Start(10)
     self.userSelection = 1
 
-    --initialize game entities
+    -- initialize game entities
     player = Player()
     player:spawn()
-    --has user made a selection?
+    self:createPellets()
+    -- has user made a selection?
     self.startGame = false
 
     self.buffer = 0
 end
 
-function Game:buildGrid() 
+
+function Game:buildGameGrid() 
     for x = 0, WINDOW_WIDTH, cellSize do
         table.insert(grid.x, x / cellSize, x)
     end
@@ -112,7 +124,32 @@ function Game:buildGrid()
         table.insert(grid.y, y / cellSize, y)
     end
 end
---initializes game settings based on userSelection value
+
+function Game:createPellets()
+local p
+local gp = {}
+local clear = false
+
+
+    for x = 2, #grid.x, 1 do
+        for y = 2, #grid.y, 1 do
+            if (y < 10 or y > 20 and x ~= 7) or x == 7 or x == 22 then
+                clear = true
+                for i, w in ipairs(walls) do
+                    if CheckCollision(grid.x[x], grid.y[y], cellSize, cellSize, w.x, w.y, w.width + cellSize, w.height + cellSize) then
+                        clear = false
+                    end
+                end
+                if clear then
+                    table.insert(gp, {x,y;})
+                    table.insert(pellets,Pellet(grid.x[gp[#gp][1]], grid.y[gp[#gp][2]]))
+                end
+            end
+        end
+    end
+end
+
+-- initializes game settings based on userSelection value
 function Game:setOptions()
     
 end
@@ -120,11 +157,11 @@ end
 function Game:update(dt)
     player:update(dt)
     --self.start:update(dt)
-    if self.startGame then
-        for k, v in ipairs(walls) do
-            
-        end
+    --if self.startGame then
+    for i, p in ipairs(pellets) do
+        p:update(dt)
     end
+    --end
 end
 
 function Game:keypressed(key)
@@ -136,16 +173,12 @@ function Game:keypressed(key)
         end
     end
     if key == 'up' or key == 'w' then
-        -- player:changeDirection('y', -1)
         love.event.push('directionChange','y', -1)
     elseif key == 'left' or key == 'a' then
-        -- player:changeDirection('x', -1)
         love.event.push('directionChange','x', -1)
     elseif key == 'down' or key == 's' then
-        -- player:changeDirection('y', 1)
         love.event.push('directionChange','y', 1)
     elseif key == 'right' or key == 'd' then
-        -- player:changeDirection( 'x', 1)
         love.event.push('directionChange','x', 1)
     end
     --[[
@@ -172,25 +205,30 @@ function Game:keypressed(key)
         end
     end
     --]]
-    --immediately exits and restarts the program
+    -- immediately exits the program
     if key == 'escape' then
         love.event.quit()
     end
 end
 
 function Game:draw()
-	--gfx.setLineWidth(2)
+    
     if showGrid then
         for i, line in ipairs(gridLines) do
-            love.graphics.line(line)
+            gfx.line(line)
         end
     end
     gfx.setColor(colors.blue)
-    for k, v in pairs(walls) do
-        v:draw()
+    for i, w in ipairs(walls) do
+        w:draw()
     end
     Spawner:draw()
     gfx.setColor(colors.white)
+    for i, p in ipairs(pellets) do
+        if p.active then
+            p:draw()
+        end
+    end
     player:draw()
     --[[
     if not self.startGame then

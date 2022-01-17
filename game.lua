@@ -1,152 +1,133 @@
-Game = Object:extend()
-grid = { x = {}, y ={} }
-cellSize = 25
+Game = class('Game')
+require 'debugger'
+
+
+cellSize = 32
 gridLines = {}
+World = bump.newWorld(cellSize)
+Level = 1
+Score = 0
+Debugger = Debugger:new()
 
-function Game:new()
-
-    self:buildGameGrid()
-    walls =
-    {
-        --top left warp
-        Wall(-cellSize, grid.y[13], cellSize * 7, cellSize),
-        Wall(grid.x[5], grid.y[10], cellSize, cellSize * 4),
-        Wall(-cellSize, grid.y[10], cellSize * 7, cellSize),
-        --top border wall
-        Wall(0, 0, cellSize, cellSize * 11),
-        Wall(0, 0, cellSize * 29, cellSize),
-        Wall(grid.x[14], 0, cellSize, cellSize * 5),
-        Wall(grid.x[28],0, cellSize, cellSize * 11),
-        --top right warp
-        Wall(grid.x[23], grid.y[10], cellSize * 7, cellSize),
-        Wall(grid.x[23], grid.y[10], cellSize, cellSize * 4),
-        Wall(grid.x[23], grid.y[13], cellSize * 7, cellSize),
-        --bottom left warp
-        Wall(-cellSize, grid.y[16], cellSize * 7, cellSize),
-        Wall(grid.x[5], grid.y[16], cellSize, cellSize * 4),
-        Wall(-cellSize, grid.y[19], cellSize * 7, cellSize),
-        --bottom border
-        Wall(0,grid.y[19], cellSize, cellSize * 13),
-        Wall(0,grid.y[25], cellSize * 3, cellSize),
-        Wall(0, grid.y[31], cellSize * 29, cellSize),
-        Wall(grid.x[26],grid.y[25], cellSize * 3, cellSize),
-        Wall(grid.x[28], grid.y[19], cellSize, cellSize * 13),
-        --bottom right warp
-        Wall(grid.x[23], grid.y[19], cellSize * 7, cellSize),
-        Wall(grid.x[23], grid.y[16], cellSize, cellSize * 4),
-        Wall(grid.x[23], grid.y[16], cellSize * 7, cellSize),
-        --inner walls
-        Wall(grid.x[3], grid.y[3], cellSize * 3, cellSize * 2),
-        Wall(grid.x[3], grid.y[7], cellSize * 3, cellSize),
-        Wall(grid.x[3], grid.y[22], cellSize * 3, cellSize),
-        Wall(grid.x[3], grid.y[28], cellSize * 9, cellSize),
-        Wall(grid.x[5],grid.y[22], cellSize, cellSize * 4),
-        Wall(grid.x[8], grid.y[3], cellSize * 4, cellSize * 2),
-        Wall(grid.x[8], grid.y[7], cellSize, cellSize * 7),
-        Wall(grid.x[8], grid.y[10], cellSize * 4 , cellSize),
-        Wall(grid.x[8], grid.y[16], cellSize, cellSize * 4),
-        Wall(grid.x[8], grid.y[22], cellSize * 4, cellSize),
-        Wall(grid.x[8], grid.y[25], cellSize, cellSize * 4),
-        Wall(grid.x[11], grid.y[7], cellSize * 7, cellSize),
-        Wall(grid.x[11], grid.y[19], cellSize * 7, cellSize),
-        Wall(grid.x[11], grid.y[25], cellSize * 7, cellSize),
-        Wall(grid.x[14], grid.y[7], cellSize , cellSize * 4),
-        Wall(grid.x[14], grid.y[19], cellSize , cellSize * 4),
-        Wall(grid.x[14], grid.y[25], cellSize , cellSize * 4),
-        Wall(grid.x[17], grid.y[3], cellSize * 4, cellSize * 2),
-        Wall(grid.x[17], grid.y[10], cellSize * 4 , cellSize),
-        Wall(grid.x[17], grid.y[22], cellSize * 4, cellSize),
-        Wall(grid.x[17], grid.y[28], cellSize * 9, cellSize),
-        Wall(grid.x[20], grid.y[7], cellSize, cellSize * 7),
-        Wall(grid.x[20], grid.y[16], cellSize, cellSize * 4),
-        Wall(grid.x[20], grid.y[25], cellSize, cellSize * 4),
-        Wall(grid.x[23], grid.y[3], cellSize * 3, cellSize * 2),
-        Wall(grid.x[23], grid.y[7], cellSize * 3, cellSize),
-        Wall(grid.x[23], grid.y[22], cellSize * 3, cellSize),
-        Wall(grid.x[23],grid.y[22], cellSize, cellSize * 4),
-        --spawner walls
-        Wall(grid.x[11], grid.y[13], cellSize * 2, 5);
-        Wall(grid.x[11], grid.y[13], 5, cellSize * 4);
-        Wall(grid.x[11], grid.y[17]-5, cellSize * 7, 5);
-        Wall(grid.x[18]-5, grid.y[13], 5, cellSize * 4);
-        Wall(grid.x[16], grid.y[13], cellSize * 2, 5);
-    }
+function Game:init()
+    
+    TotalPellets = 0
+    walls = GenWall()
+    pellets = GenPellets()
+    PelletsCollected = 0
+    player = nil
     spawner = Spawner()
-    pellets = {}
+    enemies = {}
 
     --create grid lines
     -- vertical lines.
-    for x = cellSize, WINDOW_WIDTH, cellSize do
-        local line = {x, 0, x, WINDOW_HEIGHT}
+    for x = cellSize, WindowWidth, cellSize do
+        local line = {x, 0, x, WindowHeight}
         table.insert(gridLines, line)
     end
     -- horizontal lines.
-    for y = cellSize, WINDOW_HEIGHT, cellSize do
-        local line = {0, y, WINDOW_WIDTH, y}
+    for y = cellSize, WindowHeight, cellSize do
+        local line = {0, y, WindowWidth, y}
         table.insert(gridLines, line)
     end
 
-    --[[
-    --import resources
-    xMenuOrigin = (WINDOW_WIDTH / 2) - 50
-    yMenuOrigin = WINDOW_HEIGHT / 2
-    
-    --build menu items
-    gameTitle = love.graphics.newText(gameFont, 'Weega-Pac')
-    startOne = love.graphics.newText(gameFont,'1-player')
-    menuQuit = love.graphics.newText(gameFont,'Quit')
-    menuOptions = 
-    {
-        [1] = startOne,
-        [2] = menuQuit
-    }
-    --]]
-    -- initialize start screen
-    --self.start = Start(10)
-    self.userSelection = 1
+    -- initialize menu items
+    local overTitle = gfx.newText(gameFont, 'Game Over')
+    self.gameOver = GameOver(overTitle, {gfx.newText(gameFont, 'Restart'),
+                                         gfx.newText(gameFont, 'Quit')})
+
+    gameTitle = gfx.newText(gameFont, 'Pac-Geega')
+    self.menuMain = MainMenu(gameTitle, {gfx.newText(gameFont,'Start'),
+                                         gfx.newText(gameFont,'Quit'),})
+    self.menuMain.open = true
 
     -- initialize game entities
-    player = Player()
-    player:spawn()
-    self:createPellets()
-    -- has user made a selection?
-    self.startGame = false
-
-    self.buffer = 0
+    self:start()
+    self.timer = 1
 end
 
-
-function Game:buildGameGrid() 
-    for x = 0, WINDOW_WIDTH, cellSize do
-        table.insert(grid.x, x / cellSize, x)
-    end
-    for y = 0, WINDOW_HEIGHT, cellSize do
-        table.insert(grid.y, y / cellSize, y)
-    end
-end
-
-function Game:createPellets()
-local p
-local gp = {}
-local clear = false
-
-
-    for x = 2, #grid.x, 1 do
-        for y = 2, #grid.y, 1 do
-            if (y < 10 or y > 20 and x ~= 7) or x == 7 or x == 22 then
-                clear = true
-                for i, w in ipairs(walls) do
-                    if CheckCollision(grid.x[x], grid.y[y], cellSize, cellSize, w.x, w.y, w.width + cellSize, w.height + cellSize) then
-                        clear = false
-                    end
+function Game:update(dt)
+    if self.menuMain.open then
+        -- menu animations here
+        self.menuMain:update(dt)
+    else
+        if self.timer > 0 then
+            self.timer = self.timer - dt
+        else
+            if PelletsCollected < TotalPellets then
+                player:update(dt)
+                for i = 1, #enemies do
+                    enemies[i]:update(dt)
                 end
-                if clear then
-                    table.insert(gp, {x,y;})
-                    table.insert(pellets,Pellet(grid.x[gp[#gp][1]], grid.y[gp[#gp][2]]))
-                end
+            else
+                event.push('levelCompleted')
             end
         end
     end
+end
+
+function Game:draw()
+local main_menu = self.menuMain
+local game_over = self.gameOver
+    if main_menu.open then
+        main_menu:draw()
+    elseif game_over.open then
+        game_over:draw()
+    else 
+        if self.timer > 0 then 
+            gfx.print('Level: ' .. Level, cellSize * 11, cellSize * 13, 0, 2, 2)
+        end
+        if Debugger:getStatus() then
+            for i, line in ipairs(gridLines) do
+                gfx.line(line)
+            end
+        end
+        gfx.setColor(colors.blue)
+        for x = 1, #walls do
+            for i, w in ipairs(walls[x]) do
+                w:draw()
+            end
+        end
+        gfx.setColor(colors.white)
+        for i, p in ipairs(pellets) do
+            p:draw()
+        end
+        Spawner:draw()
+
+        for i = 1, #enemies do
+            enemies[i]:draw()
+        end
+        player:draw()
+        gfx.print('Score: ' .. Score, cellSize * 12, cellSize * 23 + 8, 0, 1, 1)
+    end
+end
+
+function Game:start()
+    player = Player(cellSize * 12, cellSize * 17, cellSize, cellSize)
+    enemies = {
+        Enemy(cellSize * 10, cellSize * 11, cellSize, cellSize, {80/255, 0, 0}, 1),
+        -- Enemy(cellSize * 11, cellSize * 11, cellSize, cellSize, {100/255, 0, 0}, 2),
+        -- Enemy(cellSize * 13, cellSize * 11, cellSize, cellSize, {190/255, 0, 0}, 3),
+        -- Enemy(cellSize * 14, cellSize * 11, cellSize, cellSize, {240/255, 155/255, 100/255}, 4),
+    }
+end
+
+function Game:resetLevel(soft)
+
+    player:respawn()
+
+    for i = 1, #enemies do
+        enemies[i]:respawn()
+    end
+    -- if player died then
+    -- do soft reset only
+    if not soft then
+        for i = 1, #pellets do
+            pellets[i]:addToWorld()
+        end
+        PelletsCollected = 0
+    end
+    self.timer = 1
 end
 
 -- initializes game settings based on userSelection value
@@ -154,100 +135,58 @@ function Game:setOptions()
     
 end
 
-function Game:update(dt)
-    player:update(dt)
-    --self.start:update(dt)
-    --if self.startGame then
-    for i, p in ipairs(pellets) do
-        p:update(dt)
-    end
-    --end
-end
+function Game:keypressed(k)
+    local menu = self.menuMain
+    local game_over = self.gameOver
+    local selection = nil
 
-function Game:keypressed(key)
-    if key == 'space' then
-        if not showGrid then
-            showGrid = true
-        else
-            showGrid = false
-        end
-    end
-    if key == 'up' or key == 'w' then
-        love.event.push('directionChange','y', -1)
-    elseif key == 'left' or key == 'a' then
-        love.event.push('directionChange','x', -1)
-    elseif key == 'down' or key == 's' then
-        love.event.push('directionChange','y', 1)
-    elseif key == 'right' or key == 'd' then
-        love.event.push('directionChange','x', 1)
-    end
     --[[
-    if key == 'kp+' then
+    if k == 'kp+' then
         Sound:raiseVolume()
-    elseif key == 'kp-' then
+    elseif k == 'kp-' then
         Sound:lowerVolume()
     end
+    --]]
 
-    if not self.startGame then
-        if self.userSelection > 1 and (key == 'up' or key == 'w') then
-            self.userSelection = self.userSelection - 1
-        elseif self.userSelection < 2 and (key == 'down' or key == 's') then
-            self.userSelection = self.userSelection + 1
+    if menu.open then
+        menu:keypressed(k)
+        if k == 'space' or k == 'return' then
+            -- get selected option
+            selection = menu:getUserSelection()
+            menu.open = false
+        end
+    elseif game_over.open then
+        game_over:keypressed(k)
+        if k == 'space' or k == 'return' then
+            -- get selected option
+            selection = game_over:getUserSelection()
+            game_over.open = false
+        end
+    else
+        if k == 'tab' then
+            Debugger:toggle()
+        end
+        -- debug function
+        if k == 'space' or k == 'return' then
+
         end
 
-        if key == 'space' then
-            if self.userSelection == 1 then
-                self:setOptions()
-                self.startGame = true
-            else
-                love.event.quit()
-            end
+        if k == 'up' or k == 'w' then
+            love.event.push('directionChange', 'up', -1)
+        elseif k == 'left' or k == 'a' then
+            love.event.push('directionChange', 'left', -1)
+        elseif k == 'down' or k == 's' then
+            love.event.push('directionChange', 'down', 1)
+        elseif k == 'right' or k == 'd' then
+            love.event.push('directionChange', 'right', 1)
         end
     end
-    --]]
     -- immediately exits the program
-    if key == 'escape' then
+    if k == 'escape' or selection == 2 then
         love.event.quit()
     end
 end
 
-function Game:draw()
-    
-    if showGrid then
-        for i, line in ipairs(gridLines) do
-            gfx.line(line)
-        end
-    end
-    gfx.setColor(colors.blue)
-    for i, w in ipairs(walls) do
-        w:draw()
-    end
-    Spawner:draw()
-    gfx.setColor(colors.white)
-    for i, p in ipairs(pellets) do
-        if p.active then
-            p:draw()
-        end
-    end
-    player:draw()
-    --[[
-    if not self.startGame then
-        self.start.draw()
-        local ymenuItemOffset = 50
-        love.graphics.draw(gameTitle, WINDOW_WIDTH * 0.35 , 100, 0, 3,3)
-
-        for k, v in pairs(menuOptions) do
-            love.graphics.draw(menuOptions[k], xMenuOrigin, yMenuOrigin + (50 * (k-1)), 0 , 3, 2)
-        end
-
-        --displays which option is currently selected
-        if self.userSelection == 1 then
-            love.graphics.rectangle('line', xMenuOrigin -10, yMenuOrigin, startOne:getWidth() * 3 + 20, startOne:getHeight() * 2 + 5)
-        end
-        if self.userSelection == 2 then
-            love.graphics.rectangle('line', xMenuOrigin -10, yMenuOrigin + ymenuItemOffset, startTwo:getWidth() * 3 + 20, startTwo:getHeight() * 2 + 5)
-        end
-    end
-    --]]
+function Game:over()
+    self.gameOver.open = true
 end
-

@@ -1,1 +1,8 @@
 weega_pac.code-workspace
+.vscode/
+libraries/bump/rockspecs/
+libraries/bump/img/
+libraries/bump/spec/
+libraries/bump/.travis.yml
+libraries/bump/README.md
+libraries/bump/CHANGELOG.md

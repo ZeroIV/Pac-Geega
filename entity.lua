@@ -1,47 +1,51 @@
-Entity = Object:extend()
+Entity = class('Entity')
 
-function Entity:new(x, y, width, height)
+function Entity:init(x, y, width, height)
     self.x = x
     self.y = y
     self.width = width
     self.height = height
     self.xspeed = 0
     self.yspeed = 0
+    World:add(self, self.x, self.y, self.width, self.height)
 end
 
 function Entity:update(dt)
-    self.x = self.x + self.xspeed * dt
-    self.y = self.y + self.yspeed * dt
-    self.xOrigin = self.x + self.width / 2
-    self.yOrigin = self.y - self.height / 2
-
-    -- if self.y <= 0 then
-    --     self.y = 0
-    --     self.yspeed = -self.yspeed
-    -- elseif self.y + self.height >= WINDOW_HEIGHT then
-    --     self.y = WINDOW_HEIGHT - self.height
-    --     self.yspeed = -self.yspeed
-    -- end
-
+    World:update(self, self.x, self.y)
 end
 
-function Entity:getDimensions()
-    return self.x, self.y, self.width, self.height
+function Entity:switchDirection(dir)
+    if type(dir) ~= 'string' then
+        dir = tostring(dir)
+    end
+
+    if dir == 'x' then
+        self.xspeed = -self.xspeed
+    elseif dir == 'y' then
+        self.yspeed = -self.yspeed
+    end
 end
 
-function Entity:stop()
+function Entity:stop(align)
     self.xspeed = 0
     self.yspeed = 0
+    if align then
+        self.x, self.y = SnapToGrid(self)
+    end
 end
 
 function Entity:Warp()
     if self.x <= - 40 then
-        self.x = WINDOW_WIDTH
-    elseif self.x > WINDOW_WIDTH then
+        self.x = WindowWidth
+        World:update(self, self.x, self.y)
+    elseif self.x > WindowWidth then
         self.x = 0 - self.width
+        World:update(self, 0 - self.width, self.y)
     end
 end
 
 function Entity:draw()
-    gfx.rectangle('fill', self.x, self.y, self.width, self.height)
+    gfx.setColor(colors.green)
+    gfx.rectangle('line', self.x, self.y, self.width, self.height)
+    gfx.setColor(colors.white)
 end

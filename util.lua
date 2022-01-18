@@ -125,6 +125,7 @@ end
 --#region       GENERAL UTIL FUNCTIONS
 -- ***************************************************
 
+-- included for compatability with Lua versions earlier than 5.2
 function table.pack(...)
     return { n = select('#', ...), ... }
 end
@@ -153,6 +154,34 @@ function SnapToGrid(e)
     end
 end
 
+function CreateTexturedCircle(image, segments)
+	segments = segments or 40
+	local vertices = {}
+	
+	table.insert(vertices, {0, 0, 0.5, 0.5, 1, 1, 1})
+	
+	-- Create the vertices at the edge of the circle.
+	for i=0, segments do
+		local angle = (i / segments) * math.pi * 2
+
+		-- Unit-circle.
+		local x = math.cos(angle)
+		local y = math.sin(angle)
+		
+		-- Our position is in the range of [-1, 1] but we want the texture coordinate to be in the range of [0, 1].
+		local u = (x + 1) * 0.5
+		local v = (y + 1) * 0.5
+		
+		-- The per-vertex color defaults to white.
+		table.insert(vertices, {x, y, u, v})
+	end
+	
+	-- The "fan" draw mode is perfect for our circle.
+	local mesh = love.graphics.newMesh(vertices, "fan")
+    mesh:setTexture(image)
+    return mesh
+end
+
 --#endregion
 
 -- ***************************************************
@@ -166,19 +195,37 @@ end
 
 function love.handlers.enemyKilled(id)
     local e = enemies[id]
-    e:changeState(4)
+    e:setState(4)
     Score = Score + 200 * Level
 end
 
 function love.handlers.powerPelletCollected()
     local time
-    local mt = Level -- shorten time based on level
-    time = 600
+    local mt = 10 * Level -- shorten time based on level
+    time = 200
 
-    time = math.round(time / mt)
+    time = (math.round(time / mt) + 10)
     for k, e in pairs(enemies) do
-        e:makeVunerable(time)
+        e:setVunerable(time)
     end
+end
+
+function love.handlers.onDeath()
+    local e = player
+    -- gfx.translate(100, 100)
+    -- local t = love.timer.getTime()
+    -- gfx.shear(math.cos(t), math.cos(t * 1.3))
+    -- e:draw()
+
+    if e.lives >= 1 then
+        e.lives = e.lives - 1
+        -- e:respawn()
+        -- game:resetLevel(true)
+    -- else
+        -- event.push('gameover')
+    end
+    e:respawn()
+    game:resetLevel(true)
 end
 
 function love.handlers.gameover()

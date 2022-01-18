@@ -31,5 +31,8 @@ function love.draw()
     game:draw()
 end
 
+function love.handlers.restart()
+    game = Game()
+end
 
 

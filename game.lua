@@ -8,7 +8,6 @@ World = bump.newWorld(cellSize)
 Level = 1
 Score = 0
 Debugger = Debugger:new()
-
 function Game:init()
     
     TotalPellets = 0
@@ -50,7 +49,7 @@ function Game:update(dt)
     if self.menuMain.open then
         -- menu animations here
         self.menuMain:update(dt)
-    else
+    elseif not self.gameOver.open then
         if self.timer > 0 then
             self.timer = self.timer - dt
         else
@@ -106,8 +105,8 @@ function Game:start()
     player = Player(cellSize * 12, cellSize * 17, cellSize, cellSize)
     enemies = {
         Enemy(cellSize * 10, cellSize * 11, cellSize, cellSize, {80/255, 0, 0}, 1),
-        -- Enemy(cellSize * 11, cellSize * 11, cellSize, cellSize, {100/255, 0, 0}, 2),
-        -- Enemy(cellSize * 13, cellSize * 11, cellSize, cellSize, {190/255, 0, 0}, 3),
+        Enemy(cellSize * 11, cellSize * 11, cellSize, cellSize, {100/255, 0, 0}, 2),
+        Enemy(cellSize * 13, cellSize * 11, cellSize, cellSize, {190/255, 0, 0}, 3),
         -- Enemy(cellSize * 14, cellSize * 11, cellSize, cellSize, {240/255, 155/255, 100/255}, 4),
     }
 end
@@ -120,7 +119,7 @@ function Game:resetLevel(soft)
         enemies[i]:respawn()
     end
     -- if player died then
-    -- do soft reset only
+    -- reset entities only
     if not soft then
         for i = 1, #pellets do
             pellets[i]:addToWorld()
@@ -130,9 +129,9 @@ function Game:resetLevel(soft)
     self.timer = 1
 end
 
--- initializes game settings based on userSelection value
-function Game:setOptions()
-    
+-- reset all game enities and return to main menu
+function Game:reset()
+    event.push('restart')
 end
 
 function Game:keypressed(k)
@@ -160,15 +159,27 @@ function Game:keypressed(k)
         if k == 'space' or k == 'return' then
             -- get selected option
             selection = game_over:getUserSelection()
+
             game_over.open = false
         end
     else
         if k == 'tab' then
             Debugger:toggle()
         end
-        -- debug function
-        if k == 'space' or k == 'return' then
 
+        -- for debugging
+        if k == 'space' or k == 'return' then
+            local e = enemies[1]
+            local p = e.path or nil
+            local s = e.step
+            if p then
+                local l = #p
+
+                for k, v in pairs(p) do
+                    print(string.format('node: %d x: %d y: %d', k, v.x, v.y))
+                end
+            end
+            print('step: ' .. s)
         end
 
         if k == 'up' or k == 'w' then

@@ -229,7 +229,6 @@ function love.handlers.onDeath()
 end
 
 function love.handlers.gameover()
-    
     game:over()
 end
 

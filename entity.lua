@@ -7,10 +7,16 @@ function Entity:init(x, y, width, height)
     self.height = height
     self.xspeed = 0
     self.yspeed = 0
+    self.idleTimer = 1
     World:add(self, self.x, self.y, self.width, self.height)
 end
 
 function Entity:update(dt)
+    if self.xspeed == 0 and self.yspeed == 0 then
+        self.idleTimer = self.idleTimer - dt
+    else
+        self.idleTimer = 1
+    end
     World:update(self, self.x, self.y)
 end
 

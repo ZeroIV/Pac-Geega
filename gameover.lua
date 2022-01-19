@@ -10,7 +10,7 @@ end
 
 function GameOver:draw()
     local final_score = Score
-    gfx.print('Total Score: ' .. final_score, WindowWidth / 2, WindowHeight / 3, 0, 1)
+    gfx.print('Total Score: ' .. final_score, cellSize * 11, cellSize * 8, 0, 1)
     self.super.draw(self)
 end
 

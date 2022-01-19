@@ -104,10 +104,10 @@ end
 function Game:start()
     player = Player(cellSize * 12, cellSize * 17, cellSize, cellSize)
     enemies = {
-        Enemy(cellSize * 10, cellSize * 11, cellSize, cellSize, {80/255, 0, 0}, 1),
-        Enemy(cellSize * 11, cellSize * 11, cellSize, cellSize, {100/255, 0, 0}, 2),
-        Enemy(cellSize * 13, cellSize * 11, cellSize, cellSize, {190/255, 0, 0}, 3),
-        -- Enemy(cellSize * 14, cellSize * 11, cellSize, cellSize, {240/255, 155/255, 100/255}, 4),
+        Enemy(cellSize * 10, cellSize * 11, cellSize, cellSize, 1),
+        Enemy(cellSize * 11, cellSize * 11, cellSize, cellSize, 2),
+        Enemy(cellSize * 13, cellSize * 11, cellSize, cellSize, 3),
+        Enemy(cellSize * 14, cellSize * 11, cellSize, cellSize, 4),
     }
 end
 
@@ -169,17 +169,7 @@ function Game:keypressed(k)
 
         -- for debugging
         if k == 'space' or k == 'return' then
-            local e = enemies[1]
-            local p = e.path or nil
-            local s = e.step
-            if p then
-                local l = #p
 
-                for k, v in pairs(p) do
-                    print(string.format('node: %d x: %d y: %d', k, v.x, v.y))
-                end
-            end
-            print('step: ' .. s)
         end
 
         if k == 'up' or k == 'w' then

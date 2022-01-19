@@ -2,7 +2,40 @@ Enemy = Entity:extend('Enemy')
 
 local vunerable_color = {0/255, 0/255, 200/255}
 local vunerable_timer = 0
-local enemySprites
+local playerPos
+local enemySprites = {
+    {
+        gfx.newImage('sprites/mobs/monster_idle.png'),
+        gfx.newImage('sprites/mobs/monster_up.png'),
+        gfx.newImage('sprites/mobs/monster_down.png'),
+        gfx.newImage('sprites/mobs/monster_left.png'),
+        gfx.newImage('sprites/mobs/monster_right.png')
+    },
+
+    {
+        gfx.newImage('sprites/mobs/undead_idle.png'),
+        gfx.newImage('sprites/mobs/undead_up.png'),
+        gfx.newImage('sprites/mobs/undead_down.png'),
+        gfx.newImage('sprites/mobs/undead_left.png'),
+        gfx.newImage('sprites/mobs/undead_right.png'),
+    },
+
+    {
+        gfx.newImage('sprites/mobs/creature_idle.png'),
+        gfx.newImage('sprites/mobs/creature_up.png'),
+        gfx.newImage('sprites/mobs/creature_down.png'),
+        gfx.newImage('sprites/mobs/creature_left.png'),
+        gfx.newImage('sprites/mobs/creature_right.png'),
+    },
+
+    {
+        gfx.newImage('sprites/mobs/waffles_idle.png'),
+        gfx.newImage('sprites/mobs/waffles_up.png'),
+        gfx.newImage('sprites/mobs/waffles_down.png'),
+        gfx.newImage('sprites/mobs/waffles_left.png'),
+        gfx.newImage('sprites/mobs/waffles_right.png'),
+    },
+}
 
 local enemyFilter = function(item, other)
     if other.isPlayer then return 'cross' end
@@ -19,9 +52,9 @@ end
 -- end
 
 
-function Enemy:init(x, y, width, height, color, id)
+function Enemy:init(x, y, width, height, id)
     self.isEnemy = true
-    self.id = id or 0
+    self.id = id
     self.state = 0 -- 0 = roam, 1 = pursuit, 2 = guard, 3 = vunerable, 4 = dead
     self.speed = 90 + (Level * 10)
     self.startx = x
@@ -30,42 +63,68 @@ function Enemy:init(x, y, width, height, color, id)
     self.y = y
     self.width = width
     self.height = height
-    self.color =  color
     self.path = nil
+    self.playerDistance = nil
+    self.pursuitTimer = 0
     self.step = 1
-    --self.sprite = gfx.newImage('sprites/mobs/creature_idle.png')
+    self.sprites = enemySprites[id]
+    self.activeSprite = enemySprites[id][1]
     Enemy.super.init(self, x, y, width, height)
 end
 
 function Enemy:update(dt)
     self:Warp()
+    self.playerDistance = self:getPlayerDistance()
+
+    if self.playerDistance >= 0 and self.playerDistance < 4 and not (self.state == 1 or self.state == 3 or self.state == 4) then
+        self:setState(1)
+    elseif self.playerDistance > 6 and self.state == 1 then
+        self:setState(0)
+        self.pursuitTimer = 5
+    end
+
+    if self.pursuitTimer > 0 and self.state == 0 then
+        self.pursuitTimer = self.pursuitTimer - dt
+    end
 
     if vunerable_timer > 0 then
-        vunerable_timer = vunerable_timer - dt
-    elseif vunerable_timer <= 0 and self.state == 3 then
-        self:changeState(2)
+        vunerable_timer = vunerable_timer - dt 
+    elseif (vunerable_timer <= 0 and self.state == 3) or
+                (self.pursuitTimer <= 0 and self.state == 0) then
+        self:setState(2)
     end
+
     if self.path then
         self:checkPath(self.step, dt)
     else
         self:requestPath()
     end
+
     Enemy.super.update(self, dt)
 end
 
 function Enemy:draw()
     local x = self.x + self.width / 2
     local y = self.y + self.height / 2
+    local sprites = self.sprites
     if Debugger:getStatus() then
         Enemy.super.draw(self)
     end
     if self.state == 3 then
         gfx.setColor(vunerable_color)
-    else
-        gfx.setColor(colors.red)
     end
-    -- gfx.draw(self.sprite, self.x, self.y, 0, 0.25)
-    gfx.circle('fill', x, y, math.round(cellSize / 3))
+    if self.yspeed < 0 then
+        self.activeSprite = sprites[2]
+    elseif self.yspeed > 0 then
+        self.activeSprite = sprites[3]
+    elseif self.xspeed < 0 then
+        self.activeSprite = sprites[4]
+    elseif self.xspeed > 0 then
+        self.activeSprite = sprites[5]
+    end
+
+    gfx.draw(self.activeSprite, self.x, self.y, 0, 0.25)
+    -- gfx.circle('fill', x, y, math.round(cellSize / 3))
     gfx.setColor(colors.white)
 end
 
@@ -74,12 +133,11 @@ function Enemy:requestPath()
     local mapsize = #map
     local start = { x = math.round(self.x / cellSize), y = math.round(self.y / cellSize) }
     local goal
-    if self.state == 0 then
+    if self.state == 0 then -- roam map aimlessly
         goal = { x = math.random(2, mapsize), y = math.random(2, mapsize) }
-    elseif self.state == 1 then
+    elseif self.state == 1 then -- pursue player
         goal = { x = math.round(player.x / cellSize), y = math.round(player.y / cellSize) }
-
-    elseif self.state == 2 then
+    elseif self.state == 2 then -- roam respective corner
         if self.id == 1 then
             goal = { x = math.random(1, 11), y = math.random(2, 7) }
         elseif self.id == 2 then
@@ -104,7 +162,7 @@ function Enemy:checkPath(i, dt)
     local y = math.round((self.y)/cellSize, 1)
     local speed = self.speed
     local path = self.path
-    if path[i].x and path[i].y and #path >= 6 then -- don't bother with short sporatic paths
+    if (#path >= 6 or self.state == 1) then -- don't bother with short sporatic paths
         local goalx = path[i].x
         local goaly = path[i].y
         if y < goaly then
@@ -153,6 +211,23 @@ function Enemy:move(dt)
     end
 end
 
+-- finds the players distance in relation to the grid
+function Enemy:getPlayerDistance()
+    local mapsize = #map
+    local start = { x = math.round(self.x / cellSize), y = math.round(self.y / cellSize) }
+    local goal
+    local distMap
+    local dist
+
+    goal = { x = math.round(player.x / cellSize), y = math.round(player.y / cellSize) }
+    distMap = luastar:find(mapsize, mapsize - 1, start, goal, posIsOpen, true, true)
+    if distMap then
+        dist = #distMap
+    end
+    
+    return dist
+end
+
 function Enemy:respawn()
     self.speed = 90 + (Level * 10)
     self.state = 2
@@ -162,12 +237,15 @@ function Enemy:respawn()
     World:update(self, self.x, self.y)
 end
 
-function Enemy:changeState(x)
+function Enemy:setState(x)
     self.state = x
+    if self.pursuitTimer > 0 then
+        self.pursuitTimer = 0
+    end
     reset_path(self)
 end
 
-function Enemy:makeVunerable(time)
+function Enemy:setVunerable(time)
     vunerable_timer = time
-    self:changeState(3)
+    self:setState(3)
 end

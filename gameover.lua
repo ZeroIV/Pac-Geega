@@ -14,6 +14,3 @@ function GameOver:draw()
     self.super.draw(self)
 end
 
-function GameOver:resetTimer()
-    timer = 10
-end

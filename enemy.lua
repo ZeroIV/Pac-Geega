@@ -1,41 +1,55 @@
 Enemy = Entity:extend('Enemy')
 
-local vunerable_color = {0/255, 0/255, 200/255}
-local vunerable_timer = 0
-local playerPos
 local enemySprites = {
     {
-        gfx.newImage('sprites/mobs/monster_idle.png'),
-        gfx.newImage('sprites/mobs/monster_up.png'),
-        gfx.newImage('sprites/mobs/monster_down.png'),
-        gfx.newImage('sprites/mobs/monster_left.png'),
-        gfx.newImage('sprites/mobs/monster_right.png')
+        gfx.newImage('sprites/mobs/monster/monster_idle.png'),
+        gfx.newImage('sprites/mobs/monster/monster_up.png'),
+        gfx.newImage('sprites/mobs/monster/monster_down.png'),
+        gfx.newImage('sprites/mobs/monster/monster_left.png'),
+        gfx.newImage('sprites/mobs/monster/monster_right.png'),
+        gfx.newImage('sprites/mobs/monster/monster_vul.png'),
+        gfx.newImage('sprites/mobs/monster/monster_dead.png')
     },
 
     {
-        gfx.newImage('sprites/mobs/undead_idle.png'),
-        gfx.newImage('sprites/mobs/undead_up.png'),
-        gfx.newImage('sprites/mobs/undead_down.png'),
-        gfx.newImage('sprites/mobs/undead_left.png'),
-        gfx.newImage('sprites/mobs/undead_right.png'),
+        gfx.newImage('sprites/mobs/undead/undead_idle.png'),
+        gfx.newImage('sprites/mobs/undead/undead_up.png'),
+        gfx.newImage('sprites/mobs/undead/undead_down.png'),
+        gfx.newImage('sprites/mobs/undead/undead_left.png'),
+        gfx.newImage('sprites/mobs/undead/undead_right.png'),
+        gfx.newImage('sprites/mobs/undead/undead_vul.png'),
+        gfx.newImage('sprites/mobs/undead/undead_dead.png')
     },
 
     {
-        gfx.newImage('sprites/mobs/creature_idle.png'),
-        gfx.newImage('sprites/mobs/creature_up.png'),
-        gfx.newImage('sprites/mobs/creature_down.png'),
-        gfx.newImage('sprites/mobs/creature_left.png'),
-        gfx.newImage('sprites/mobs/creature_right.png'),
+        gfx.newImage('sprites/mobs/creature/creature_idle.png'),
+        gfx.newImage('sprites/mobs/creature/creature_up.png'),
+        gfx.newImage('sprites/mobs/creature/creature_down.png'),
+        gfx.newImage('sprites/mobs/creature/creature_left.png'),
+        gfx.newImage('sprites/mobs/creature/creature_right.png'),
+        gfx.newImage('sprites/mobs/creature/creature_vul.png'),
+        gfx.newImage('sprites/mobs/creature/creature_dead.png')
     },
 
     {
-        gfx.newImage('sprites/mobs/waffles_idle.png'),
-        gfx.newImage('sprites/mobs/waffles_up.png'),
-        gfx.newImage('sprites/mobs/waffles_down.png'),
-        gfx.newImage('sprites/mobs/waffles_left.png'),
-        gfx.newImage('sprites/mobs/waffles_right.png'),
+        gfx.newImage('sprites/mobs/waffles/waffles_idle.png'),
+        gfx.newImage('sprites/mobs/waffles/waffles_up.png'),
+        gfx.newImage('sprites/mobs/waffles/waffles_down.png'),
+        gfx.newImage('sprites/mobs/waffles/waffles_left.png'),
+        gfx.newImage('sprites/mobs/waffles/waffles_right.png'),
+        gfx.newImage('sprites/mobs/waffles/waffles_vul.png'),
+        gfx.newImage('sprites/mobs/waffles/waffles_dead.png')
     },
 }
+
+local sounds ={
+    ghost = Sound('sounds/retreating.wav', 30/100),
+    vulnerable = Sound('sounds/power_pellet.wav', 50/100)
+}
+
+local vul_timer = 0
+local base_speed = 90
+local vframes = 10
 
 local enemyFilter = function(item, other)
     if other.isPlayer then return 'cross' end
@@ -47,16 +61,15 @@ local function reset_path(e)
     e.step = 1
 end
 
--- local function add_sprite(s)
---     enemySprites = gfx.newSpriteBatch(s, 6)
--- end
-
+local function getSprites(x)
+    return enemySprites[x]
+end
 
 function Enemy:init(x, y, width, height, id)
     self.isEnemy = true
     self.id = id
     self.state = 0 -- 0 = roam, 1 = pursuit, 2 = guard, 3 = vunerable, 4 = dead
-    self.speed = 90 + (Level * 10)
+    self.speed = base_speed + (Level * 10)
     self.startx = x
     self.starty = y
     self.x = x
@@ -68,15 +81,17 @@ function Enemy:init(x, y, width, height, id)
     self.pursuitTimer = 0
     self.step = 1
     self.sprites = enemySprites[id]
-    self.activeSprite = enemySprites[id][1]
+    self.activeSprite = self.sprites[1]
+    self.sounds = sounds
     Enemy.super.init(self, x, y, width, height)
 end
 
 function Enemy:update(dt)
     self:Warp()
-    self.playerDistance = self:getPlayerDistance()
+    self.playerDistance = self:getPlayerDistance() or math.huge
 
-    if self.playerDistance >= 0 and self.playerDistance < 4 and not (self.state == 1 or self.state == 3 or self.state == 4) then
+    if self.playerDistance >= 0 and self.playerDistance < 4 and
+                                not (self.state == 1 or self.state == 3 or self.state == 4) then
         self:setState(1)
     elseif self.playerDistance > 6 and self.state == 1 then
         self:setState(0)
@@ -87,10 +102,12 @@ function Enemy:update(dt)
         self.pursuitTimer = self.pursuitTimer - dt
     end
 
-    if vunerable_timer > 0 then
-        vunerable_timer = vunerable_timer - dt 
-    elseif (vunerable_timer <= 0 and self.state == 3) or
+    if vul_timer > 0 then
+        vul_timer = vul_timer - dt 
+    elseif (vul_timer <= 0 and self.state == 3) or
                 (self.pursuitTimer <= 0 and self.state == 0) then
+        vul_timer = 0
+        self.sounds.vulnerable:stop()
         self:setState(2)
     end
 
@@ -104,16 +121,17 @@ function Enemy:update(dt)
 end
 
 function Enemy:draw()
-    local x = self.x + self.width / 2
-    local y = self.y + self.height / 2
     local sprites = self.sprites
     if Debugger:getStatus() then
         Enemy.super.draw(self)
     end
-    if self.state == 3 then
-        gfx.setColor(vunerable_color)
-    end
-    if self.yspeed < 0 then
+
+    if self.state == 4 then
+        self.activeSprite = sprites[7]
+    elseif (self.state == 3 and vul_timer < 10 and math.round(vul_timer % 2) == 0) or
+                                            (vul_timer > 10 and self.state == 3)  then
+        self.activeSprite = sprites[6]
+    elseif self.yspeed < 0 then
         self.activeSprite = sprites[2]
     elseif self.yspeed > 0 then
         self.activeSprite = sprites[3]
@@ -124,8 +142,6 @@ function Enemy:draw()
     end
 
     gfx.draw(self.activeSprite, self.x, self.y, 0, 0.25)
-    -- gfx.circle('fill', x, y, math.round(cellSize / 3))
-    gfx.setColor(colors.white)
 end
 
 -- generates path based on current state
@@ -133,11 +149,11 @@ function Enemy:requestPath()
     local mapsize = #map
     local start = { x = math.round(self.x / cellSize), y = math.round(self.y / cellSize) }
     local goal
-    if self.state == 0 then -- roam map aimlessly
+    if self.state == 0 or self.state == 3 then -- roam map aimlessly
         goal = { x = math.random(2, mapsize), y = math.random(2, mapsize) }
     elseif self.state == 1 then -- pursue player
         goal = { x = math.round(player.x / cellSize), y = math.round(player.y / cellSize) }
-    elseif self.state == 2 then -- roam respective corner
+    elseif self.state == 2 then -- navigate respective corner
         if self.id == 1 then
             goal = { x = math.random(1, 11), y = math.random(2, 7) }
         elseif self.id == 2 then
@@ -147,11 +163,11 @@ function Enemy:requestPath()
         else
             goal = { x = math.random(13, 22), y = math.random(15, 21) }
         end
-    elseif self.state == 3 then -- vunerable state; should flee from player
-        return
     elseif self.state == 4 then -- after being eaten rushes back to respawn
+        local speed = self.speed
+        self.sounds.ghost:play(true)
         goal = { x = self.startx / cellSize, y = self.starty / cellSize }
-        self.speed = self.speed * 1.5
+        self.speed = speed * 1.25
     end
     self.path = luastar:find(mapsize, mapsize - 1, start, goal, posIsOpen, true, true)
 end
@@ -162,7 +178,7 @@ function Enemy:checkPath(i, dt)
     local y = math.round((self.y)/cellSize, 1)
     local speed = self.speed
     local path = self.path
-    if (#path >= 6 or self.state == 1) then -- don't bother with short sporatic paths
+    if (#path >= 5 or self.state == 1 or self.state == 4) then -- don't bother with short sporatic paths
         local goalx = path[i].x
         local goaly = path[i].y
         if y < goaly then
@@ -229,10 +245,11 @@ function Enemy:getPlayerDistance()
 end
 
 function Enemy:respawn()
-    self.speed = 90 + (Level * 10)
+    self.speed = base_speed + (Level * 10)
     self.state = 2
     self.step = 1
     self.path = nil
+    self.sounds.ghost:stop()
     self.x, self.y = self.startx, self.starty
     World:update(self, self.x, self.y)
 end
@@ -246,6 +263,7 @@ function Enemy:setState(x)
 end
 
 function Enemy:setVunerable(time)
-    vunerable_timer = time
+    vul_timer = time
+    self.sounds.vulnerable:play(true)
     self:setState(3)
 end

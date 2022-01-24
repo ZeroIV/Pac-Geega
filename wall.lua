@@ -10,5 +10,7 @@ function Wall:init(x, y, width, height)
 end
 
 function Wall:draw()
+    gfx.setColor(colors.blue)
     gfx.rectangle('fill', self.x, self.y, self.width, self.height)
+    gfx.setColor(colors.white)
 end

@@ -4,23 +4,8 @@ LINESEPERATOR = '\n**********************************************\n'
 gfx = love.graphics
 event = love.event
 WindowWidth, WindowHeight = gfx.getDimensions()
----Draws lines between x, y coordinate sets
----@overload fun(coordinates: table)
----@param coordinates table # table containing line coordinates.
----@param color? table # sets color to use when drawing the lines.
----@param width? number # Width of the lines in pixels
----@param lineStyle? string # style used when drawing the lines.
----@param joinStyle? string # style used when joining lines together.
-function DrawLines(coordinates, color, width, lineStyle, joinStyle)
-    gfx.push()
-    gfx.setColor(color or {1,1,1})
-    gfx.setLineWidth(width or 2)
-    gfx.setLineStyle(lineStyle or 'smooth')
-    gfx.setLineJoin(joinStyle or 'none')
-    gfx.line(coordinates)
-    gfx.pop()
-    gfx.setColor(colors.white)
-end
+
+TextTimer = 1.5
 
 -- ***************************************************
 -- #region  Maze Building + Pathfinding Functions
@@ -58,6 +43,7 @@ map = {
 
 local maxX = #map
 
+-- used for enemy pathfinding
 function posIsOpen(x, y)
     -- should return true if the position is open to walk
     local walkable = false
@@ -67,6 +53,24 @@ function posIsOpen(x, y)
     if walkable then
         return true
     end
+end
+
+---Draws lines between x, y coordinate sets
+---@overload fun(coordinates: table)
+---@param coordinates table # table containing line coordinates.
+---@param color? table # sets color to use when drawing the lines.
+---@param width? number # Width of the lines in pixels
+---@param lineStyle? string # style used when drawing the lines.
+---@param joinStyle? string # style used when joining lines together.
+function DrawLines(coordinates, color, width, lineStyle, joinStyle)
+    gfx.push()
+    gfx.setColor(color or {1,1,1})
+    gfx.setLineWidth(width or 2)
+    gfx.setLineStyle(lineStyle or 'smooth')
+    gfx.setLineJoin(joinStyle or 'none')
+    gfx.line(coordinates)
+    gfx.pop()
+    gfx.setColor(colors.white)
 end
 
 function GenWall()
@@ -87,6 +91,13 @@ function GenWall()
     table.insert(walls[1], Wall(0, cellSize * 12, cellSize, cellSize))
     table.insert(walls[23], Wall(WindowWidth - cellSize, cellSize * 10, cellSize, cellSize))
     table.insert(walls[23], Wall(WindowWidth - cellSize, cellSize * 12, cellSize, cellSize))
+    local temp = {}
+    for i = 1, #walls do
+        for k, w in pairs(walls[i]) do
+            table.insert(temp, w)
+        end
+    end
+    walls = temp
     return walls
 end
 
@@ -136,6 +147,7 @@ end
 
 -- Returns 'n' rounded to the nearest 'deci'th (defaulting whole numbers).
 function math.round(n, deci) deci = 10^(deci or 0) return math.floor(n*deci+.5)/deci end
+function math.dist(x1,y1, x2,y2) return ((x2-x1)^2+(y2-y1)^2)^0.5 end
 
 function CheckCollision(x1,y1,w1,h1, x2,y2,w2,h2)
     return x1 < x2+w2 and
@@ -152,6 +164,26 @@ function SnapToGrid(e)
     if e then
         return math.round(e.x) + 1, math.round(e.y) + 1
     end
+end
+
+---resets the game maze
+---@param partial boolean # true if only entities need to be reset
+function ResetLevel(partial)
+
+    player:respawn()
+
+    for i = 1, #enemies do
+        enemies[i]:respawn()
+    end
+    -- if player died then
+    -- reset entities only
+    if not partial then
+        for i = 1, #pellets do
+            pellets[i]:addToWorld()
+        end
+        PelletsCollected = 0
+    end
+    game.readyTimer = 4
 end
 
 function CreateTexturedCircle(image, segments)
@@ -190,11 +222,16 @@ end
 
 function love.handlers.levelCompleted()
     Level = Level + 1
-    game:resetLevel()
+    ResetLevel(false)
 end
 
 function love.handlers.enemyKilled(id)
     local e = enemies[id]
+    local transform = love.math.newTransform(e.x,e.y + 16, 0, 1)
+
+    floatingText:set(tostring(200 * Level))
+    game.textTransform = transform
+    TextTimer = 1
     e:setState(4)
     Score = Score + 200 * Level
 end
@@ -202,34 +239,23 @@ end
 function love.handlers.powerPelletCollected()
     local time
     local mt = 10 * Level -- shorten time based on level
-    time = 200
-
+    time = 300
+    
     time = (math.round(time / mt) + 10)
     for k, e in pairs(enemies) do
         e:setVunerable(time)
     end
 end
 
-function love.handlers.onDeath()
+function love.handlers.onDeath(sfx)
     local e = player
-    -- gfx.translate(100, 100)
-    -- local t = love.timer.getTime()
-    -- gfx.shear(math.cos(t), math.cos(t * 1.3))
-    -- e:draw()
-
     if e.lives >= 1 then
         e.lives = e.lives - 1
-        -- e:respawn()
-        -- game:resetLevel(true)
-    -- else
-        -- event.push('gameover')
+        e:respawn()
+        ResetLevel(true)
+    else
+        game.gameOver.open = true
     end
-    e:respawn()
-    game:resetLevel(true)
-end
-
-function love.handlers.gameover()
-    game:over()
 end
 
 --#endregion

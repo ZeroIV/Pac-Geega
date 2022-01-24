@@ -1,19 +1,28 @@
 Player = Entity:extend('Player')
 
-
-
 local startx, starty
+
 local sprites = {
     L = { gfx.newImage('sprites/Geeg/geeg_left_1.png'), 
             gfx.newImage('sprites/Geeg/geeg_left_2.png'), 
-            gfx.newImage('sprites/Geeg/geeg_left_3.png') },
+            gfx.newImage('sprites/Geeg/geeg_left_3.png')
+        },
 
     R = { gfx.newImage('sprites/Geeg/geeg_right_1.png'),
             gfx.newImage('sprites/Geeg/geeg_right_2.png'),
-            gfx.newImage('sprites/Geeg/geeg_right_3.png') },
+            gfx.newImage('sprites/Geeg/geeg_right_3.png')
+        },
 }
+local sounds = {
+    -- death = Sound('sounds/player_death.wav'), 
+    eat_1 = Sound('sounds/geeg_diechild.mp3', 75/100),
+    eat_2 = Sound('sounds/geeg_disgusting.mp3', 75/100),
+    munch_1 = Sound('sounds/munch_1.wav', 30/100),
+    munch_2 = Sound('sounds/munch_2.wav', 30/100),
+}
+
 local r = 0
-local currentFacing = 0 -- used to determine sprite to use for animations
+local currentFacing = 0 -- used in sprite animations
 
 local playerFilter = function(item, other)
     if     other.isEnemy then return 'cross'
@@ -24,7 +33,7 @@ local playerFilter = function(item, other)
     -- else return nil
 end
 
--- #region Local methods
+-- #region Local Player methods
 
 local function setSpeed(e, dir, speed)
     if dir == 'left' or dir == 'right' then
@@ -52,6 +61,12 @@ local function setRotation(dir)
     end
 end
 
+PlayerDeathAnim = function()
+    gfx.translate(25, 25)
+    local t = love.timer.getTime()
+    gfx.shear(math.cos(t), math.cos(t * 1.3))
+end
+
 -- #endregion
 
 function Player:init(x, y, width, height)
@@ -71,8 +86,14 @@ end
 function Player:update(dt)
     self:Warp()
     self:move(dt)
+
     if not (self.xspeed == 0 and self.yspeed == 0) then
-        if self.aFrame < 10 then
+        if self.aFrame == 4 then
+            sounds.munch_1:play()
+        elseif self.aFrame == 11 then
+            sounds.munch_2:play()
+        end
+        if self.aFrame < 14 then
             self.aFrame = self.aFrame + 1
         else
             self.aFrame = 1
@@ -96,20 +117,20 @@ function Player:draw()
     if not (self.xspeed == 0 and self.yspeed == 0) then
         if frame <= 3 then
             self.mesh:setTexture(sprite[1])
-        elseif frame <= 6 and frame > 3 then
+        elseif frame <= 8 and frame > 3 then
             self.mesh:setTexture(sprite[2])
-        elseif frame <= 10 and frame > 6 then
+        elseif frame <= 14 and frame > 8 then
             self.mesh:setTexture(sprite[3])
         end
     end
-
-    gfx.draw(self.mesh, x, y, math.rad(r), cellSize/2)
     if Debugger:getStatus() then
         Player.super.draw(self)
     end
     for i = 1, self.lives do
         gfx.draw(sprites.L[1], cellSize * (8 + (i-1)), cellSize * 23 + 5, 0, 0.25)
     end
+
+    gfx.draw(self.mesh, x, y, math.rad(r), cellSize/2)
 end
 
 
@@ -121,8 +142,16 @@ function Player:move(dt)
 
     for i=1,len do
         local other = cols[i].other
+        if other.isPellet then
+            other:onCollect()
+        end
         if other.isEnemy then
             if other.state == 3 then
+                if math.random(4) > 2 then
+                    sounds.eat_2:play()
+                else
+                    sounds.eat_1:play()
+                end
                 event.push('enemyKilled', other.id)
             elseif other.state == 4 then
                 return
@@ -132,9 +161,6 @@ function Player:move(dt)
         end
         if other.isWall or other.isSpawner then
             self:stop()
-        end
-        if other.isPellet then
-            other:onCollect()
         end
     end
 end
@@ -162,8 +188,6 @@ function Player:changeDirection(dir)
         setRotation(dir)
     end
 end
-
-
 
 function love.handlers.directionChange(dir)
 

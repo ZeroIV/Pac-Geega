@@ -1,5 +1,7 @@
 Menu = class('Menu')
 
+
+
 function Menu:init(title, items, spacing, xOrigin, yOrigin)
     self.title = title
     self.items = items
@@ -8,6 +10,10 @@ function Menu:init(title, items, spacing, xOrigin, yOrigin)
     self.yMenuOrigin = yOrigin or cellSize * 11
     self.selection = 1
     self.maxSelections = #items
+    self.sfx = {
+        change = Sound('sounds/interface_click.mp3', 25/100),
+        select = Sound('sounds/select.wav', 25/100),
+    }
     self.open = false
 end
 
@@ -20,8 +26,10 @@ function Menu:keypressed(k)
     if self.open then
         if (k == 'up' or k == 'w') and self.selection > 1 then
             self.selection = self.selection - 1
+            self.sfx.change:play()
         elseif (k == 'down' or k == 's') and self.selection < self.maxSelections then
             self.selection = self.selection + 1
+            self.sfx.change:play()
         end
     end
 end

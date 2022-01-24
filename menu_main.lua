@@ -4,6 +4,7 @@ local timer = 3
 local bgPlayer
 local bgEnemy
 
+
 function MainMenu:init(title, options)
     self.title = title
     self.options = options
@@ -18,6 +19,7 @@ function MainMenu:update(dt)
 end
 
 function MainMenu:draw()
+    CreateTexturedCircle()
     self.super.draw(self)
 end
 
@@ -26,4 +28,5 @@ function MainMenu:resetTimer()
 end
 
 function MainMenu:bgAnim(...)
+
 end

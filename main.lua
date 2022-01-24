@@ -3,6 +3,7 @@ function love.load()
     bump = require('.libraries.bump.bump')
     luastar = require('libraries.lua-star')
     require 'util'
+    require 'sound'
     require 'game'
     require 'menu'
     require 'menu_main'
@@ -14,6 +15,9 @@ function love.load()
     require 'wall'
     require 'spawner'
     gameFont = gfx.newFont('fonts/ka1.ttf', 10)
+    floatingText = gfx.newText(gameFont, '')
+    love.audio.setDistanceModel('none')
+    love.audio.setPosition(WindowWidth/2, WindowHeight/2, 0)
     colors = { ['red'] = {1,0,0}, ['green'] = {0,1,0}, ['blue'] = {0,0,1}, ['white'] = {1,1,1}}
     game = Game()
 end
@@ -32,6 +36,9 @@ function love.draw()
 end
 
 function love.handlers.restart()
+    World = bump.newWorld(cellSize)
+    Score = 0
+    Level = 1
     game = Game()
 end
 

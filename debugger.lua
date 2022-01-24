@@ -3,6 +3,7 @@ Debugger = class('Debugger')
 local debugLog = {}
 local debug_status
 local log_seperator = '\n'
+
 function Debugger:init()
     for i = 1, 20 do
         log_seperator = log_seperator .. '*'
@@ -53,4 +54,12 @@ function Debugger:dump()
         end
     end
     print(log_seperator)
+end
+
+function Debugger:upValue(x)
+    return x + 1
+end
+
+function Debugger:downValue(x)
+    return x - 1
 end

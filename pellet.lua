@@ -1,6 +1,11 @@
 Pellet = class('Pellet')
 
 local value = 10
+local sprite = gfx.newImage('sprites/the_juice.png')
+
+local function remove(e)
+    World:remove(e)
+end
 
 function Pellet:init(x, y, power)
     self.isPellet = true
@@ -23,7 +28,11 @@ end
 
 function Pellet:draw()
     if not self.collected then
-        gfx.circle('fill', self.x, self.y, self.radius)
+        if self.isPowerPellet and sprite then
+            gfx.draw(sprite, self.x - 16, self.y - 16, 0, 0.5)
+        else
+            gfx.circle('fill', self.x, self.y, self.radius)
+        end
     end
 end
 
@@ -40,7 +49,7 @@ function Pellet:onCollect()
         end
         Score = Score + pt * Level
         PelletsCollected = PelletsCollected + 1
-        World:remove(self)
+        remove(self)
     end
 end
 
@@ -50,3 +59,4 @@ function Pellet:addToWorld()
         self.collected = false
     end
 end
+

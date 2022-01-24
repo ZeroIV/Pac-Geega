@@ -16,3 +16,7 @@ function Spawner:draw()
     }
     DrawLines(enemy_spawn_gate, colors.white)
 end
+
+function Spawner:remove()
+    World:remove(self)
+end

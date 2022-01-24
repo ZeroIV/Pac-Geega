@@ -20,6 +20,12 @@ function Entity:update(dt)
     World:update(self, self.x, self.y)
 end
 
+function Entity:draw()
+    gfx.setColor(colors.green)
+    gfx.rectangle('line', self.x, self.y, self.width, self.height)
+    gfx.setColor(colors.white)
+end
+
 function Entity:switchDirection(dir)
     if type(dir) ~= 'string' then
         dir = tostring(dir)
@@ -48,10 +54,4 @@ function Entity:Warp()
         self.x = 0 - self.width
         World:update(self, 0 - self.width, self.y)
     end
-end
-
-function Entity:draw()
-    gfx.setColor(colors.green)
-    gfx.rectangle('line', self.x, self.y, self.width, self.height)
-    gfx.setColor(colors.white)
 end

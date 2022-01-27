@@ -48,7 +48,7 @@ local sounds ={
 }
 
 local vul_timer = 0
-local base_speed = 90
+local base_speed = 88
 local vframes = 10
 
 local enemyFilter = function(item, other)
@@ -61,15 +61,11 @@ local function reset_path(e)
     e.step = 1
 end
 
-local function getSprites(x)
-    return enemySprites[x]
-end
-
 function Enemy:init(x, y, width, height, id)
     self.isEnemy = true
     self.id = id
     self.state = 0 -- 0 = roam, 1 = pursuit, 2 = guard, 3 = vunerable, 4 = dead
-    self.speed = base_speed + (Level * 10)
+    self.speed = base_speed + (Level * 8)
     self.startx = x
     self.starty = y
     self.x = x
@@ -85,6 +81,8 @@ function Enemy:init(x, y, width, height, id)
     self.sounds = sounds
     Enemy.super.init(self, x, y, width, height)
 end
+
+function Enemy:getSprites() return enemySprites end
 
 function Enemy:update(dt)
     self:Warp()

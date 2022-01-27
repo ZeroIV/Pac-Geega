@@ -9,6 +9,7 @@ Debugger = Debugger:new()
 gridLines = {}
 
 local sounds = {
+    --https://www.newgrounds.com/audio/listen/740866
     mainTheme = Sound('sounds/music/good-mood-theme-8-bit.mp3', 50/100),
     level_start = Sound('sounds/game_start.wav')
 }
@@ -58,29 +59,30 @@ end
 
 function Game:update(dt)
 
-    if love.window.hasFocus() and love.window.isVisible() then
-        if self.menuMain.open then
-            -- menu animations here
-            self.menuMain:update(dt)
-        elseif self.gameOver.open then
-            self.gameOver:update(dt)
+    -- if love.window.hasFocus() then
+        
+    -- end
+    if self.menuMain.open then
+        -- menu animations here
+        self.menuMain:update(dt)
+    elseif self.gameOver.open then
+        self.gameOver:update(dt)
+    else
+        if self.readyTimer > 0 then
+            self.readyTimer = self.readyTimer - dt
         else
-            if self.readyTimer > 0 then
-                self.readyTimer = self.readyTimer - dt
-            else
-                if PelletsCollected < TotalPellets then
-                    for i = 1, #enemies do
-                        enemies[i]:update(dt)
-                    end
-                    if TextTimer > 0 then
-                        TextTimer = TextTimer - dt
-                    else
-                        TextTimer = 0
-                    end
-                    player:update(dt)
-                else
-                    event.push('levelCompleted')
+            if PelletsCollected < TotalPellets then
+                for i = 1, #enemies do
+                    enemies[i]:update(dt)
                 end
+                if FloatingTextTimer > 0 then
+                    FloatingTextTimer = FloatingTextTimer - dt
+                else
+                    FloatingTextTimer = 0
+                end
+                player:update(dt)
+            else
+                event.push('levelComplete')
             end
         end
     end
@@ -89,12 +91,12 @@ end
 function Game:draw()
 local main_menu = self.menuMain
 local game_over = self.gameOver
-
     if main_menu.open then
         main_menu:draw()
     elseif game_over.open then
         game_over:draw()
     else 
+        gfx.translate(-cellSize, 0)
         if self.readyTimer > 0 then 
             sounds.level_start:play()
             gfx.print('Level: ' .. Level, cellSize * 11, cellSize * 13, 0, 2, 2)
@@ -115,7 +117,7 @@ local game_over = self.gameOver
             enemies[i]:draw()
         end
         player:draw()
-        if TextTimer > 0 then
+        if FloatingTextTimer > 0 then
             gfx.draw(floatingText, self.textTransform)
         end
         gfx.print('Score: ' .. Score, cellSize * 12, cellSize * 23 + 8, 0, 1, 1)
@@ -149,23 +151,18 @@ function Game:keypressed(k)
     if menu.open then
         menu:keypressed(k)
         if k == 'space' or k == 'return' then
-            -- get selected option
             menu.sfx.select:play()
             selection = menu:getUserSelection()
             menu.open = false
             sounds.mainTheme:stop()
-            if selection == 1 then
-                --sounds.level_start:play()
-            end
         end
     elseif game_over.open then
         game_over:keypressed(k)
         if k == 'space' or k == 'return' then
-            -- get selected option
             selection = game_over:getUserSelection()
         end
         if selection == 1 then
-               love.event.push('restart') 
+               love.event.push('restart')
         end
     else
         if k == 'tab' then
@@ -173,17 +170,17 @@ function Game:keypressed(k)
         end
         -- for debugging
         if k == 'space' or k == 'return' then
-
+            
         end
 
         if k == 'up' or k == 'w' then
-            love.event.push('directionChange', 'up', -1)
+            love.event.push('playerDirectionChange', 'up')
         elseif k == 'left' or k == 'a' then
-            love.event.push('directionChange', 'left', -1)
+            love.event.push('playerDirectionChange', 'left')
         elseif k == 'down' or k == 's' then
-            love.event.push('directionChange', 'down', 1)
+            love.event.push('playerDirectionChange', 'down')
         elseif k == 'right' or k == 'd' then
-            love.event.push('directionChange', 'right', 1)
+            love.event.push('playerDirectionChange', 'right')
         end
     end
 

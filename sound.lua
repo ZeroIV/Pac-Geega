@@ -1,7 +1,7 @@
 Sound = class('Sound')
 
 local audio = love.audio
-
+local pausedSources = {}
 function Sound:init(source, vol)
 	local source = love.sound.newSoundData(source)
 	self.sound = audio.newSource(source)
@@ -41,6 +41,19 @@ function Sound:lowerVolume()
 		audio.setVolume(0)
 	else
 		audio.setVolume(currentVolume - 0.1)
+	end
+end
+
+function Sound:pause(...)
+	pausedSources = audio.pause()
+end
+
+function Sound:resume()
+	if #pausedSources > 0 then
+		for s = 1, #pausedSources do
+			
+		end
+		pausedSources = {}
 	end
 end
 

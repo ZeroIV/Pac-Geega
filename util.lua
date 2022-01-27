@@ -5,7 +5,7 @@ gfx = love.graphics
 event = love.event
 WindowWidth, WindowHeight = gfx.getDimensions()
 
-TextTimer = 1.5
+FloatingTextTimer = 1.5
 
 -- ***************************************************
 -- #region  Maze Building + Pathfinding Functions
@@ -145,6 +145,8 @@ function DoDelta(x, vel)
     return x + (vel * dt)
 end
 
+-- Returns the closest multiple of 'size' (defaulting to 10).
+function math.multiple(n, size) size = size or 10 return math.round(n/size)*size end
 -- Returns 'n' rounded to the nearest 'deci'th (defaulting whole numbers).
 function math.round(n, deci) deci = 10^(deci or 0) return math.floor(n*deci+.5)/deci end
 function math.dist(x1,y1, x2,y2) return ((x2-x1)^2+(y2-y1)^2)^0.5 end
@@ -157,17 +159,21 @@ function CheckCollision(x1,y1,w1,h1, x2,y2,w2,h2)
 end
 
 --- finds the grid point nearest the center of the passed object
----@param e table
+---@param e table # the entity that is being passed
 ---@return number x # nearest x coordinate
 ---@return number y # nearest y coordinate
 function SnapToGrid(e)
     if e then
-        return math.round(e.x) + 1, math.round(e.y) + 1
+        local x, y = math.multiple(e.x, 32), math.multiple(e.y, 32)
+        
+        x = x + 4
+        y = y + 4
+        return x,y
     end
 end
 
 ---resets the game maze
----@param partial boolean # true if only entities need to be reset
+---@param partial boolean # true if only entities should be reset
 function ResetLevel(partial)
 
     player:respawn()
@@ -175,8 +181,7 @@ function ResetLevel(partial)
     for i = 1, #enemies do
         enemies[i]:respawn()
     end
-    -- if player died then
-    -- reset entities only
+
     if not partial then
         for i = 1, #pellets do
             pellets[i]:addToWorld()
@@ -220,18 +225,18 @@ end
 -- #region       CUSTOM EVENT HANDLERS
 -- ***************************************************
 
-function love.handlers.levelCompleted()
+function love.handlers.levelComplete()
     Level = Level + 1
     ResetLevel(false)
 end
 
-function love.handlers.enemyKilled(id)
+function love.handlers.eatEnemy(id)
     local e = enemies[id]
     local transform = love.math.newTransform(e.x,e.y + 16, 0, 1)
 
     floatingText:set(tostring(200 * Level))
     game.textTransform = transform
-    TextTimer = 1
+    FloatingTextTimer = 1
     e:setState(4)
     Score = Score + 200 * Level
 end
@@ -244,6 +249,46 @@ function love.handlers.powerPelletCollected()
     time = (math.round(time / mt) + 10)
     for k, e in pairs(enemies) do
         e:setVunerable(time)
+    end
+end
+
+function love.handlers.playerDirectionChange(dir)
+    local e = player
+    local x, y = e.x, e.y
+    local goalX, goalY = x, y
+    local align = true
+    local canMove = false
+    
+    if (e.xspeed < 0 and dir == 'left') or (e.xspeed > 0 and dir == 'right') or
+            (e.yspeed < 0 and dir == 'up') or (e.yspeed > 0 and dir == 'down') then
+        return
+    else
+        if (e.xspeed == 0 and (dir == 'up' or dir == 'down')) or
+            (e.yspeed == 0 and (dir == 'left' or dir == 'right')) then
+            align = false
+        end
+
+        goalX, goalY = math.multiple(x, 32) / 32, math.multiple(y, 32) / 32
+
+        if dir == 'up' then
+            goalY = goalY -1
+        elseif dir == 'left' then
+            goalX = goalX -1
+        elseif dir == 'down' then
+            goalY = goalY + 1
+        elseif dir == 'right' then
+            goalX = goalX + 1
+        end
+
+        if goalY == 11 and (goalX <= 0 or goalX >=22) then
+            canMove = true
+        elseif posIsOpen(goalX, goalY) then
+            canMove = true
+        end
+        
+        if canMove then
+            e:changeDirection(dir, align)
+        end
     end
 end
 

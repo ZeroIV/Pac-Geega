@@ -23,6 +23,7 @@ local sounds = {
 
 local r = 0
 local currentFacing = 0 -- used in sprite animations
+local callbacks = {}
 
 local playerFilter = function(item, other)
     if     other.isEnemy then return 'cross'
@@ -61,6 +62,28 @@ local function setRotation(dir)
     end
 end
 
+local function MoveUp(e)
+    e:stop()
+    e.yspeed = -e.speed
+end
+
+local function MoveDown(e)
+    e:stop()
+    e.yspeed = e.speed
+end
+
+local function MoveLeft(e)
+    e:stop()
+    e.xspeed = -e.speed
+end
+
+local function MoveRight(e)
+    e:stop()
+    e.xspeed = e.speed
+end
+
+
+
 PlayerDeathAnim = function()
     gfx.translate(25, 25)
     local t = love.timer.getTime()
@@ -71,21 +94,30 @@ end
 
 function Player:init(x, y, width, height)
     self.isPlayer = true
-    self.speed = 125
+    self.speed = 120
     startx, starty = x + 4, y + 4
     self.x = x
     self.y = y
     self.width = width
     self.height = height
     self.lives = 2
-    Player.super.init(self, x + 4, y + 4, width - 8, height - 8)
+    -- Player.super.init(self, x + 6, y + 6, width - 12, height - 12)
+    Player.super.init(self, x +4, y + 4, width - 8, height -8)
     self.aFrame = 1
     self.mesh = CreateTexturedCircle(sprites.R[1])
 end
 
+function Player:getSprites() return sprites end
+
 function Player:update(dt)
     self:Warp()
     self:move(dt)
+
+    for k, call in pairs(callbacks) do
+        if (self.x == call.x * 32 and self.y == call.y * 32) then
+            
+        end
+    end
 
     if not (self.xspeed == 0 and self.yspeed == 0) then
         if self.aFrame == 4 then
@@ -147,12 +179,12 @@ function Player:move(dt)
         end
         if other.isEnemy then
             if other.state == 3 then
-                if math.random(4) > 2 then
+                if math.random(8) > 4 then
                     sounds.eat_2:play()
                 else
                     sounds.eat_1:play()
                 end
-                event.push('enemyKilled', other.id)
+                event.push('eatEnemy', other.id)
             elseif other.state == 4 then
                 return
             else
@@ -173,10 +205,10 @@ function Player:respawn()
     World:update(self, self.x, self.y)
 end
 
-function Player:changeDirection(dir)
+function Player:changeDirection(dir, align)
     if type(dir) == 'string' then
         local speed = self.speed
-        self:stop()
+        self:stop(align)
         World:update(self, self.x, self.y)
 
         if dir == 'up' or dir == 'left' then
@@ -186,41 +218,5 @@ function Player:changeDirection(dir)
         setSpeed(self, dir, speed)
         setFacing(dir)
         setRotation(dir)
-    end
-end
-
-function love.handlers.directionChange(dir)
-
-    local e = player
-    local x, y, w, h, filter = e.x, e.y, e.width, e.height, e.colFilter
-    local vel = e.speed
-    local goalX, goalY = x, y
-    local canMove = true
-    
-    if (e.xspeed < 0 and dir == 'left') or (e.xspeed > 0 and dir == 'right') or
-            (e.yspeed < 0 and dir == 'up') or (e.yspeed > 0 and dir == 'down') then
-        return
-    else
-        if dir == 'up' then
-            goalY = DoDelta(y, -vel)
-        elseif dir == 'left' then
-            goalX = DoDelta(x, -vel)
-        elseif dir == 'down' then
-            goalY = DoDelta(y, vel)
-        elseif dir == 'right' then
-            goalX = DoDelta(x, vel)
-        end
-
-        local cols, len = World:project(e, x, y, w, h, goalX, goalY, filter)
-        for i = 1, len do
-            local other = cols[i].other
-            if other.isWall or other.isSpawner then
-                canMove = false
-            end
-        end
-
-        if canMove then
-            e:changeDirection(dir)
-        end
     end
 end

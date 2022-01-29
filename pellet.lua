@@ -36,7 +36,7 @@ function Pellet:draw()
     end
 end
 
-function Pellet:onCollect()
+function Pellet:onCollect(sfx)
     local pt = value
     if self.collected == false then
         self.collected = true
@@ -45,6 +45,7 @@ function Pellet:onCollect()
 
         if self.isPowerPellet then
             pt = pt * 2
+            sfx:play()
             event.push('powerPelletCollected')
         end
         Score = Score + pt * Level

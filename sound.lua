@@ -44,7 +44,8 @@ function Sound:lowerVolume()
 	end
 end
 
-function Sound:pause(...)
+--[[
+function Sound:pause()
 	pausedSources = audio.pause()
 end
 
@@ -56,6 +57,7 @@ function Sound:resume()
 		pausedSources = {}
 	end
 end
+--]]
 
 function Sound:stop()
 	self.sound:stop()

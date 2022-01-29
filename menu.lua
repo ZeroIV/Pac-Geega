@@ -1,13 +1,11 @@
 Menu = class('Menu')
 
-
-
 function Menu:init(title, items, spacing, xOrigin, yOrigin)
     self.title = title
     self.items = items
     self.itemSpacing = spacing or 50
-    self.xMenuOrigin = xOrigin or cellSize * 11
-    self.yMenuOrigin = yOrigin or cellSize * 11
+    self.xMenuOrigin = xOrigin or cellSize * 10
+    self.yMenuOrigin = yOrigin or cellSize * 10
     self.selection = 1
     self.maxSelections = #items
     self.sfx = {
@@ -22,7 +20,6 @@ function Menu:update(dt)
 end
 
 function Menu:keypressed(k)
-    
     if self.open then
         if (k == 'up' or k == 'w') and self.selection > 1 then
             self.selection = self.selection - 1

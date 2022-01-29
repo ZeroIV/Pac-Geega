@@ -1,7 +1,6 @@
 Player = Entity:extend('Player')
 
 local startx, starty
-
 local sprites = {
     L = { gfx.newImage('sprites/Geeg/geeg_left_1.png'), 
             gfx.newImage('sprites/Geeg/geeg_left_2.png'), 
@@ -12,18 +11,30 @@ local sprites = {
             gfx.newImage('sprites/Geeg/geeg_right_2.png'),
             gfx.newImage('sprites/Geeg/geeg_right_3.png')
         },
+    death = { gfx.newImage('sprites/Geeg/geeg_death_1.png'),
+             gfx.newImage('sprites/Geeg/geeg_death_2.png'),
+             gfx.newImage('sprites/Geeg/geeg_death_3.png'),
+             gfx.newImage('sprites/Geeg/geeg_death_4.png'),
+             gfx.newImage('sprites/Geeg/geeg_death_5.png'),
+             gfx.newImage('sprites/Geeg/geeg_death_6.png'),
+        }
 }
 local sounds = {
-    -- death = Sound('sounds/player_death.wav'), 
+    death_voice = Sound('sounds/geeg_death.wav'),
+    death_noise_1 = Sound('sounds/death_1.wav', 80/100),
+    death_noise_2 = Sound('sounds/death_2.wav'),
     eat_1 = Sound('sounds/geeg_diechild.mp3', 75/100),
     eat_2 = Sound('sounds/geeg_disgusting.mp3', 75/100),
+    eat_3 = Sound('sounds/geeg_square-up.wav', 75/100),
+    powerPellet = Sound('sounds/geeg_ooh_high.mp3'),
     munch_1 = Sound('sounds/munch_1.wav', 30/100),
     munch_2 = Sound('sounds/munch_2.wav', 30/100),
 }
 
 local r = 0
 local currentFacing = 0 -- used in sprite animations
-local callbacks = {}
+local playDeathAnim = false
+local animFrame = 0
 
 local playerFilter = function(item, other)
     if     other.isEnemy then return 'cross'
@@ -62,32 +73,23 @@ local function setRotation(dir)
     end
 end
 
-local function MoveUp(e)
-    e:stop()
-    e.yspeed = -e.speed
-end
-
-local function MoveDown(e)
-    e:stop()
-    e.yspeed = e.speed
-end
-
-local function MoveLeft(e)
-    e:stop()
-    e.xspeed = -e.speed
-end
-
-local function MoveRight(e)
-    e:stop()
-    e.xspeed = e.speed
-end
-
-
-
-PlayerDeathAnim = function()
-    gfx.translate(25, 25)
-    local t = love.timer.getTime()
-    gfx.shear(math.cos(t), math.cos(t * 1.3))
+local PlayerDeathAnim = function(e)
+    local sprites = sprites.death
+    local frame = animFrame
+    local keyframe = 25
+    if frame >= keyframe * 6 then
+        e.mesh:setTexture(sprites[1])
+    elseif frame >= keyframe * 5 then
+        e.mesh:setTexture(sprites[2])
+    elseif frame >= keyframe * 4 then
+        e.mesh:setTexture(sprites[3])
+    elseif frame >= keyframe * 3 then
+        e.mesh:setTexture(sprites[4])
+    elseif frame >= keyframe * 2 then
+        e.mesh:setTexture(sprites[5])
+    elseif frame >= keyframe then
+        e.mesh:setTexture(sprites[6])
+    end
 end
 
 -- #endregion
@@ -101,25 +103,25 @@ function Player:init(x, y, width, height)
     self.width = width
     self.height = height
     self.lives = 2
-    -- Player.super.init(self, x + 6, y + 6, width - 12, height - 12)
-    Player.super.init(self, x +4, y + 4, width - 8, height -8)
+    Player.super.init(self, x + 4, y + 4, width - 8, height - 8)
     self.aFrame = 1
     self.mesh = CreateTexturedCircle(sprites.R[1])
 end
 
 function Player:getSprites() return sprites end
+function Player:getAnimStatus() return playDeathAnim end
 
 function Player:update(dt)
     self:Warp()
     self:move(dt)
-
-    for k, call in pairs(callbacks) do
-        if (self.x == call.x * 32 and self.y == call.y * 32) then
-            
+    if playDeathAnim then
+        if animFrame > 0 then
+            animFrame = animFrame - 1
+        else
+            sounds.death_noise_2:play()
+            event.push('PlayerDeath')
         end
-    end
-
-    if not (self.xspeed == 0 and self.yspeed == 0) then
+    elseif not (self.xspeed == 0 and self.yspeed == 0) then
         if self.aFrame == 4 then
             sounds.munch_1:play()
         elseif self.aFrame == 11 then
@@ -146,7 +148,13 @@ function Player:draw()
         sprite = sprites.R
     end
 
-    if not (self.xspeed == 0 and self.yspeed == 0) then
+    for i = 1, self.lives do
+        gfx.draw(sprites.L[1], cellSize * (8 + (i-1)), cellSize * 23 + 5, 0, 0.25)
+    end
+
+    if playDeathAnim then
+        PlayerDeathAnim(self)
+    elseif not (self.xspeed == 0 and self.yspeed == 0) then
         if frame <= 3 then
             self.mesh:setTexture(sprite[1])
         elseif frame <= 8 and frame > 3 then
@@ -155,40 +163,40 @@ function Player:draw()
             self.mesh:setTexture(sprite[3])
         end
     end
-    if Debugger:getStatus() then
-        Player.super.draw(self)
-    end
-    for i = 1, self.lives do
-        gfx.draw(sprites.L[1], cellSize * (8 + (i-1)), cellSize * 23 + 5, 0, 0.25)
-    end
-
     gfx.draw(self.mesh, x, y, math.rad(r), cellSize/2)
 end
-
 
 function Player:move(dt)
     local goalX, goalY = self.x + self.xspeed * dt, self.y + self.yspeed * dt
     local actualX, actualY, cols, len = World:move(player, goalX, goalY, playerFilter)
     self.x, self.y = actualX, actualY
-    -- deal with the collisions
 
+    -- deal with the collisions
     for i=1,len do
         local other = cols[i].other
         if other.isPellet then
-            other:onCollect()
+            other:onCollect(sounds.powerPellet)
         end
         if other.isEnemy then
             if other.state == 3 then
-                if math.random(8) > 4 then
+                local x = math.random(9)
+                if x <= 3 then
+                    sounds.eat_3:play()
+                elseif x <= 6 and x > 3 then
                     sounds.eat_2:play()
-                else
+                elseif x > 6 then
                     sounds.eat_1:play()
                 end
                 event.push('eatEnemy', other.id)
             elseif other.state == 4 then
                 return
-            else
-                event.push('onDeath')
+            elseif not playDeathAnim then
+                self:stop()
+                animFrame = 175
+                r = 0
+                sounds.death_voice:play()
+                sounds.death_noise_1:play()
+                playDeathAnim = true
             end
         end
         if other.isWall or other.isSpawner then
@@ -198,10 +206,11 @@ function Player:move(dt)
 end
 
 function Player:respawn()
-    self:stop()
+    playDeathAnim = false
     self.x, self.y = startx, starty
     self.aFrame = 1
     currentFacing = 1
+    self.mesh:setTexture(sprites.L[1])
     World:update(self, self.x, self.y)
 end
 

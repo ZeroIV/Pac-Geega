@@ -1,39 +1,27 @@
 Game = class('Game')
-require 'debugger'
 
 cellSize = 32
 World = bump.newWorld(cellSize)
 Level = 1
 Score = 0
-Debugger = Debugger:new()
-gridLines = {}
 
 local sounds = {
-    --https://www.newgrounds.com/audio/listen/740866
     mainTheme = Sound('sounds/music/good-mood-theme-8-bit.mp3', 50/100),
     level_start = Sound('sounds/game_start.wav')
 }
 
-local pause = false
+local paused = false
+local activeSounds = nil
+local animationPause = nil
 
 function Game:init()
 
+    animationPause = Player:getAnimStatus()
     TotalPellets = 0
     walls = GenWall()
     pellets = GenPellets()
     PelletsCollected = 0
     spawner = Spawner()
-    --create grid lines
-    -- vertical lines.
-    for x = cellSize, WindowWidth, cellSize do
-        local line = {x, 0, x, WindowHeight}
-        table.insert(gridLines, line)
-    end
-    -- horizontal lines.
-    for y = cellSize, WindowHeight, cellSize do
-        local line = {0, y, WindowWidth, y}
-        table.insert(gridLines, line)
-    end
 
     -- initialize menu items & text
     local overTitle = gfx.newText(gameFont, 'Game Over')
@@ -45,7 +33,7 @@ function Game:init()
                                          gfx.newText(gameFont,'Quit'),})
 
     volumeText = gfx.newText(gameFont, string.format('Volume %d',
-                                                     love.audio.getVolume() * 100))
+                                    love.audio.getVolume() * 100))
     self.menuMain.open = true
     sounds.mainTheme:play(true)
 
@@ -59,11 +47,15 @@ end
 
 function Game:update(dt)
 
-    -- if love.window.hasFocus() then
-        
-    -- end
-    if self.menuMain.open then
-        -- menu animations here
+    if love.window.hasFocus() then
+        paused = false
+    else
+        paused = true
+    end
+    
+    if paused then
+        return
+    elseif self.menuMain.open then
         self.menuMain:update(dt)
     elseif self.gameOver.open then
         self.gameOver:update(dt)
@@ -72,15 +64,22 @@ function Game:update(dt)
             self.readyTimer = self.readyTimer - dt
         else
             if PelletsCollected < TotalPellets then
+
+                player:update(dt)
+
+                if animationPause then
+                    return
+                end
+
                 for i = 1, #enemies do
                     enemies[i]:update(dt)
                 end
+
                 if FloatingTextTimer > 0 then
                     FloatingTextTimer = FloatingTextTimer - dt
                 else
                     FloatingTextTimer = 0
                 end
-                player:update(dt)
             else
                 event.push('levelComplete')
             end
@@ -91,32 +90,34 @@ end
 function Game:draw()
 local main_menu = self.menuMain
 local game_over = self.gameOver
+
     if main_menu.open then
         main_menu:draw()
     elseif game_over.open then
         game_over:draw()
     else 
         gfx.translate(-cellSize, 0)
+
         if self.readyTimer > 0 then 
             sounds.level_start:play()
             gfx.print('Level: ' .. Level, cellSize * 11, cellSize * 13, 0, 2, 2)
         end
-        if Debugger:getStatus() then
-            for i, line in ipairs(gridLines) do
-                gfx.line(line)
-            end
-        end
+
         for i, w in ipairs(walls) do
             w:draw()
         end
         Spawner:draw()
+
         for i, p in ipairs(pellets) do
             p:draw()
         end
+
         for i = 1, #enemies do
             enemies[i]:draw()
         end
+
         player:draw()
+
         if FloatingTextTimer > 0 then
             gfx.draw(floatingText, self.textTransform)
         end
@@ -164,38 +165,34 @@ function Game:keypressed(k)
         if selection == 1 then
                love.event.push('restart')
         end
-    else
-        if k == 'tab' then
-            Debugger:toggle()
-        end
-        -- for debugging
-        if k == 'space' or k == 'return' then
-            
-        end
-
-        if k == 'up' or k == 'w' then
-            love.event.push('playerDirectionChange', 'up')
-        elseif k == 'left' or k == 'a' then
-            love.event.push('playerDirectionChange', 'left')
-        elseif k == 'down' or k == 's' then
-            love.event.push('playerDirectionChange', 'down')
-        elseif k == 'right' or k == 'd' then
-            love.event.push('playerDirectionChange', 'right')
+    else -- game is active
+        if not Player:getAnimStatus() then
+            if k == 'up' or k == 'w' then
+                love.event.push('playerDirectionChange', 'up')
+            elseif k == 'left' or k == 'a' then
+                love.event.push('playerDirectionChange', 'left')
+            elseif k == 'down' or k == 's' then
+                love.event.push('playerDirectionChange', 'down')
+            elseif k == 'right' or k == 'd' then
+                love.event.push('playerDirectionChange', 'right')
+            end
         end
     end
 
+    --[[
     if  k == 'escape' then
-        -- local title = 'Confirm Exit'
-        -- local msg = 'Are you sure you want to quit the game'
-        -- local msgbuttons = {'Yes', 'No'}
-        -- local confirm = love.window.showMessageBox(title, msg, msgbuttons, 'warning')
-        -- if confirm == 1 then
-            love.event.quit()
-        -- end
+        local title = 'Confirm Exit'
+        local msg = 'Are you sure you want to quit the game'
+        local msgbuttons = {'Yes', 'No'}
+        local confirm = love.window.showMessageBox(title, msg, msgbuttons, 'warning')
+        if confirm == 1 then
+        love.event.quit()
+        end
     end
+    --]]
 
     -- immediately exits the program
-    if selection == 2 then
+    if k == 'escape' or selection == 2 then
         love.event.quit()
     end
 end

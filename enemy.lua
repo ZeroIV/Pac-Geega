@@ -41,12 +41,10 @@ local enemySprites = {
         gfx.newImage('sprites/mobs/waffles/waffles_dead.png')
     },
 }
-
 local sounds ={
     ghost = Sound('sounds/retreating.wav', 30/100),
     vulnerable = Sound('sounds/power_pellet.wav', 50/100)
 }
-
 local vul_timer = 0
 local base_speed = 88
 local vframes = 10
@@ -86,43 +84,42 @@ function Enemy:getSprites() return enemySprites end
 
 function Enemy:update(dt)
     self:Warp()
-    self.playerDistance = self:getPlayerDistance() or math.huge
+    if not Player:getAnimStatus() then 
+        self.playerDistance = self:getPlayerDistance() or math.huge
 
-    if self.playerDistance >= 0 and self.playerDistance < 4 and
-                                not (self.state == 1 or self.state == 3 or self.state == 4) then
-        self:setState(1)
-    elseif self.playerDistance > 6 and self.state == 1 then
-        self:setState(0)
-        self.pursuitTimer = 5
+        if self.playerDistance >= 0 and self.playerDistance < 4 and
+                                    not (self.state == 1 or self.state == 3 or self.state == 4) then
+            self:setState(1)
+        elseif self.playerDistance > 6 and self.state == 1 then
+            self:setState(0)
+            self.pursuitTimer = 5
+        end
+
+        if self.pursuitTimer > 0 and self.state == 0 then
+            self.pursuitTimer = self.pursuitTimer - dt
+        end
+
+        if vul_timer > 0 then
+            vul_timer = vul_timer - dt 
+        elseif (vul_timer <= 0 and self.state == 3) or
+                    (self.pursuitTimer <= 0 and self.state == 0) then
+            vul_timer = 0
+            self.sounds.vulnerable:stop()
+            self:setState(2)
+        end
+
+        if self.path then
+            self:checkPath(self.step, dt)
+        else
+            self:requestPath()
+        end
+
+        Enemy.super.update(self, dt)
     end
-
-    if self.pursuitTimer > 0 and self.state == 0 then
-        self.pursuitTimer = self.pursuitTimer - dt
-    end
-
-    if vul_timer > 0 then
-        vul_timer = vul_timer - dt 
-    elseif (vul_timer <= 0 and self.state == 3) or
-                (self.pursuitTimer <= 0 and self.state == 0) then
-        vul_timer = 0
-        self.sounds.vulnerable:stop()
-        self:setState(2)
-    end
-
-    if self.path then
-        self:checkPath(self.step, dt)
-    else
-        self:requestPath()
-    end
-
-    Enemy.super.update(self, dt)
 end
 
 function Enemy:draw()
     local sprites = self.sprites
-    if Debugger:getStatus() then
-        Enemy.super.draw(self)
-    end
 
     if self.state == 4 then
         self.activeSprite = sprites[7]
@@ -213,10 +210,10 @@ function Enemy:move(dt)
                 if not self.state == 4 then
                     self:stop()
                     reset_path(self)
+                    return
                 end
             end
         end
-
     elseif self.step == #self.path then -- path completed
         if self.state == 4 then
             self:respawn()
@@ -238,7 +235,6 @@ function Enemy:getPlayerDistance()
     if distMap then
         dist = #distMap
     end
-    
     return dist
 end
 

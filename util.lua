@@ -1,10 +1,7 @@
 local dt = love.timer.getDelta()
-ERRORSTRING = 'Something went wrong'
-LINESEPERATOR = '\n**********************************************\n'
 gfx = love.graphics
 event = love.event
 WindowWidth, WindowHeight = gfx.getDimensions()
-
 FloatingTextTimer = 1.5
 
 -- ***************************************************
@@ -13,7 +10,6 @@ FloatingTextTimer = 1.5
 
 -- 22 x 23 Map representing game maze where
 -- 0 = open, 1 = wall
----[[
 map = {
     {1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1},
     {1,0,0,0,0,0,0,1,1,1,0,1,1,1,0,0,0,1,0,0,0,1},
@@ -39,7 +35,6 @@ map = {
     {1,0,0,0,0,0,0,1,1,1,0,1,1,1,0,0,0,1,0,0,0,1},
     {1,1,1,1,1,1,1,1,1,1,0,1,1,1,1,1,1,1,1,1,1,1}
 }
---]]
 
 local maxX = #map
 
@@ -227,6 +222,7 @@ end
 
 function love.handlers.levelComplete()
     Level = Level + 1
+    love.audio.stop()
     ResetLevel(false)
 end
 
@@ -285,14 +281,14 @@ function love.handlers.playerDirectionChange(dir)
         elseif posIsOpen(goalX, goalY) then
             canMove = true
         end
-        
+
         if canMove then
             e:changeDirection(dir, align)
         end
     end
 end
 
-function love.handlers.onDeath(sfx)
+function love.handlers.PlayerDeath(sfx)
     local e = player
     if e.lives >= 1 then
         e.lives = e.lives - 1

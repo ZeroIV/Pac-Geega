@@ -239,10 +239,10 @@ end
 
 function love.handlers.powerPelletCollected()
     local time
-    local mt = 10 * Level -- shorten time based on level
-    time = 300
+    local mt = 5 * Level -- shorten time based on level
+    time = 40
     
-    time = (math.round(time / mt) + 10)
+    time = (time - mt)
     for k, e in pairs(enemies) do
         e:setVunerable(time)
     end

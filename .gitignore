@@ -6,3 +6,4 @@ libraries/bump/spec/
 libraries/bump/.travis.yml
 libraries/bump/README.md
 libraries/bump/CHANGELOG.md
+debugger.lua

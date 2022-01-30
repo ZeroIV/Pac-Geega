@@ -6,7 +6,7 @@ A simple stylized Pac-Man clone, featuring [General Geega](https://twitter.com/G
 
 Installation:
 Simply download the latest release [here](https://github.com/ZeroIV/Pac-Geega/releases/),
-Extract the contents of the zip archive and run Pac-Geega.exe to get started! 
+Extract the contents of the zip archive into a new folder and run Pac-Geega.exe to get started! 
 
 Controls:(can be found in the included readme file as well)
 
@@ -27,4 +27,4 @@ Controls:(can be found in the included readme file as well)
         "num+" = raise master volume by 10%
         "num-" = lower master volume by 10%
 
-Menu music: "[Good Mood Tune](https://www.newgrounds.com/audio/listen/740866)" by [Wyver9](https://wyver9.newgrounds.com/audio)
+Menu music: "[Good Mood Theme](https://www.newgrounds.com/audio/listen/740866)" by [Wyver9](https://wyver9.newgrounds.com/audio)

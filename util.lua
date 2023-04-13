@@ -239,7 +239,7 @@ end
 
 function love.handlers.powerPelletCollected()
     local time
-    local mt = 5 * Level -- shorten time based on level
+    local mt = 5 * (Level/5) -- shorten time based on level
     time = 40
     
     time = (time - mt)
@@ -288,7 +288,7 @@ function love.handlers.playerDirectionChange(dir)
     end
 end
 
-function love.handlers.PlayerDeath(sfx)
+function love.handlers.PlayerDeath()
     local e = player
     if e.lives >= 1 then
         e.lives = e.lives - 1

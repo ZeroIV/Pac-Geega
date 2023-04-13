@@ -32,13 +32,13 @@ local enemySprites = {
     },
 
     {
-        gfx.newImage('sprites/mobs/waffles/waffles_idle.png'),
-        gfx.newImage('sprites/mobs/waffles/waffles_up.png'),
-        gfx.newImage('sprites/mobs/waffles/waffles_down.png'),
-        gfx.newImage('sprites/mobs/waffles/waffles_left.png'),
-        gfx.newImage('sprites/mobs/waffles/waffles_right.png'),
-        gfx.newImage('sprites/mobs/waffles/waffles_vul.png'),
-        gfx.newImage('sprites/mobs/waffles/waffles_dead.png')
+        gfx.newImage('sprites/mobs/oshi/oshi_idle.png'),
+        gfx.newImage('sprites/mobs/oshi/oshi_up.png'),
+        gfx.newImage('sprites/mobs/oshi/oshi_down.png'),
+        gfx.newImage('sprites/mobs/oshi/oshi_left.png'),
+        gfx.newImage('sprites/mobs/oshi/oshi_right.png'),
+        gfx.newImage('sprites/mobs/oshi/oshi_vul.png'),
+        gfx.newImage('sprites/mobs/oshi/oshi_dead.png')
     },
 }
 local sounds ={
@@ -62,7 +62,7 @@ end
 function Enemy:init(x, y, width, height, id)
     self.isEnemy = true
     self.id = id
-    self.state = 0 -- 0 = roam, 1 = pursuit, 2 = guard, 3 = vunerable, 4 = dead
+    self.state = 0 -- 0 = roam; 1 = pursuit; 2 = guard; 3 = vunerable; 4 = dead
     self.speed = base_speed + (Level * 8)
     self.startx = x
     self.starty = y
@@ -83,10 +83,12 @@ end
 function Enemy:getSprites() return enemySprites end
 
 function Enemy:update(dt)
+    -- warp-pipe check
     self:Warp()
     if not Player:getAnimStatus() then 
         self.playerDistance = self:getPlayerDistance() or math.huge
-
+        -- chase player a short distance if they get too close
+        -- if player gets away, go back to roaming
         if self.playerDistance >= 0 and self.playerDistance < 4 and
                                     not (self.state == 1 or self.state == 3 or self.state == 4) then
             self:setState(1)
@@ -98,7 +100,7 @@ function Enemy:update(dt)
         if self.pursuitTimer > 0 and self.state == 0 then
             self.pursuitTimer = self.pursuitTimer - dt
         end
-
+        -- vulnerable state check
         if vul_timer > 0 then
             vul_timer = vul_timer - dt 
         elseif (vul_timer <= 0 and self.state == 3) or

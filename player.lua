@@ -103,7 +103,9 @@ function Player:init(x, y, width, height)
     self.width = width
     self.height = height
     self.lives = 2
+
     Player.super.init(self, x + 4, y + 4, width - 8, height - 8)
+    
     self.aFrame = 1
     self.mesh = CreateTexturedCircle(sprites.R[1])
 end

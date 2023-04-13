@@ -15,6 +15,7 @@ function MainMenu:init(title, options)
     self.options = options
     self.player = nil
     self.enemy = nil
+    
     self:createAnim()
     MainMenu.super.init(self, title, options)
 end
@@ -47,6 +48,7 @@ function MainMenu:draw()
     self.player:draw(entity1Mesh)
     self.enemy:draw(entity2Mesh)
     gfx.draw(footerText, cellSize, WindowHeight - cellSize, 0, 1)
+
     self.super.draw(self)
 end
 
@@ -69,8 +71,12 @@ function MainMenu:createAnim()
     else
         entity1Textures = texture1.R
     end
+
     entity1Mesh:setTexture(entity1Textures[1])
+
+    -- get one vulnerable enemy sprite at random
     entity2Mesh:setTexture(texture2[math.random(4)][6])
+
     e1.x, e1.y, e1.width, e1.height, e1.xspeed = x1, y1, w, h, spd
     e2.x, e2.y, e2.width, e2.height, e2.xspeed = x2, y2, w, h, spd
     self.player, self.enemy = e1, e2

@@ -14,11 +14,15 @@ function love.load()
     require 'pellet'
     require 'wall'
     require 'spawner'
+
     gameFont = gfx.newFont('fonts/ka1.ttf', 10)
     floatingText = gfx.newText(gameFont, '')
+
     love.audio.setDistanceModel('none')
     love.audio.setPosition(WindowWidth/2, WindowHeight/2, 0)
+
     colors = { ['red'] = {1,0,0}, ['green'] = {0,1,0}, ['blue'] = {0,0,1}, ['white'] = {1,1,1}}
+    
     game = Game()
 end
 

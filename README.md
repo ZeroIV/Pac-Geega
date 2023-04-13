@@ -2,7 +2,7 @@
 Built using the [Love2d framework](http://love2d.org/) for Lua.
 
 Game Description:
-A simple stylized Pac-Man clone, featuring [General Geega](https://twitter.com/GeneralGEEGA), and the mob army.
+A simple stylized Pac-Man clone, featuring [General Geega](https://www.twitch.tv/geega), and the mob army.
 
 Installation:
 Simply download the latest release [here](https://github.com/ZeroIV/Pac-Geega/releases/),

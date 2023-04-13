@@ -1,4 +1,4 @@
-Pac-Geega_v1.5.0 Readme
+Pac-Geega_v1.7.0 Readme
 
 Menu music: 'Good Mood Theme' by Wyver9 (https://wyver9.newgrounds.com/)
 
